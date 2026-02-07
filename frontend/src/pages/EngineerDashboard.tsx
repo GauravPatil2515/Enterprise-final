@@ -45,10 +45,11 @@ const EngineerDashboard = () => {
       .finally(() => setLoading(false));
   }, []);
 
-  const teams = data?.teams || [];
-  const projects = teams.flatMap((t: any) =>
-    (t.projects || []).map((p: any) => ({ ...p, teamId: t.id, teamName: t.name }))
-  );
+  const projects = (data?.projects || []).map((p: any, idx: number) => ({
+    ...p,
+    teamId: p.team_id || `t${idx}`,
+    teamName: p.team || 'Unknown',
+  }));
   const tickets = projects.flatMap((p: any) => p.tickets || []);
   const activeTickets = tickets.filter((t: any) => t.status !== 'Done');
   const myInProgress = tickets.filter((t: any) => t.status === 'In Progress');

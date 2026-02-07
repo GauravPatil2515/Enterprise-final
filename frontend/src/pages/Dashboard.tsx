@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   FolderKanban,
   Users,
@@ -42,6 +42,7 @@ const iconMap: Record<string, LucideIcon> = {
 const Dashboard = () => {
   const { state, getAllProjects, getAllTickets } = useTeams();
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 600);
@@ -224,14 +225,17 @@ const Dashboard = () => {
                           <p className="text-[11px] text-muted-foreground">{team?.name}</p>
                         </div>
                       </div>
-                      <Link
-                        to={`/project/${team?.id}/${project.id}/risk`}
-                        onClick={(e) => e.stopPropagation()}
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          navigate(`/project/${team?.id}/${project.id}/risk`);
+                        }}
                         className="p-1.5 rounded-md text-muted-foreground/50 hover:text-orange-500 hover:bg-orange-500/10 transition-colors"
                         title="AI Risk Analysis"
                       >
                         <Shield className="h-3.5 w-3.5" />
-                      </Link>
+                      </button>
                     </div>
 
                     <p className="text-xs text-muted-foreground line-clamp-1 mb-3">

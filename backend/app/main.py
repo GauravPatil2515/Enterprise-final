@@ -259,8 +259,8 @@ async def get_dashboard_data(role: str):
                 MATCH (t:Team)-[:HAS_PROJECT]->(p:Project)
                 OPTIONAL MATCH (p)-[:HAS_TICKET]->(tk:Ticket)
                 OPTIONAL MATCH (tk)<-[:ASSIGNED_TO]-(m:Member)
-                RETURN t.name as team, p { .* } as project,
-                       collect(DISTINCT tk { .*, assignee: m.name }) as tickets
+                WITH t, p, collect(DISTINCT tk { .*, assignee: m.name }) as tickets
+                RETURN t.name as team, p { .* } as project, tickets
                 ORDER BY t.name, p.name
             """)
             projects = []
@@ -318,8 +318,9 @@ async def get_dashboard_data(role: str):
             from .core.constants import INTERVENTION_IMPACTS
 
             # Average cost per member per day (enterprise assumption)
-            AVG_DAILY_COST = 450  # USD/day per member
-            AVG_TICKET_REVENUE_UNIT = 2000  # estimated revenue per delivered ticket
+            AVG_DAILY_COST = 180  # USD/day per member
+            AVG_TICKET_REVENUE_UNIT = 8000  # estimated revenue per delivered ticket
+            BASE_REVENUE_PER_MEMBER = 3000  # base monthly revenue contribution per member
 
             # 1. Team resource data
             records, _ = neo4j_client.execute_query("""
@@ -327,8 +328,9 @@ async def get_dashboard_data(role: str):
                 OPTIONAL MATCH (t)<-[:MEMBER_OF]-(m:Member)
                 OPTIONAL MATCH (t)-[:HAS_PROJECT]->(p:Project)
                 OPTIONAL MATCH (p)-[:HAS_TICKET]->(tk:Ticket)
+                WHERE tk.status <> 'Done'
                 OPTIONAL MATCH (p)-[:HAS_TICKET]->(done:Ticket)
-                WHERE tk.status <> 'Done' AND done.status = 'Done'
+                WHERE done.status = 'Done'
                 RETURN t { .* } as team,
                        count(DISTINCT m) as member_count,
                        count(DISTINCT p) as project_count,
@@ -348,8 +350,8 @@ async def get_dashboard_data(role: str):
                 team["done_ticket_count"] = done
                 # Cost to Company (CTC): member_count * daily_cost * 30 days
                 ctc = mc * AVG_DAILY_COST * 30
-                # Revenue proxy: delivered tickets * revenue unit
-                revenue = done * AVG_TICKET_REVENUE_UNIT
+                # Revenue: base per-member contribution + delivered tickets * revenue unit
+                revenue = (mc * BASE_REVENUE_PER_MEMBER) + (done * AVG_TICKET_REVENUE_UNIT)
                 profit = revenue - ctc
                 roi = round((profit / ctc) * 100, 1) if ctc > 0 else 0
                 team["cost_to_company"] = ctc
@@ -371,11 +373,14 @@ async def get_dashboard_data(role: str):
                 OPTIONAL MATCH (tk)<-[:BLOCKED_BY]-(blocker:Ticket)
                 WHERE blocker.status <> 'Done'
                 OPTIONAL MATCH (t)<-[:MEMBER_OF]-(m:Member)
+                WITH p, t, tk, done, blocker, m
+                OPTIONAL MATCH (t)-[:HAS_PROJECT]->(tp:Project)
                 RETURN p { .* } as project, t.name as team,
                        count(DISTINCT tk) as active_tickets,
                        count(DISTINCT done) as done_tickets,
                        count(DISTINCT blocker) as blocked_count,
-                       count(DISTINCT m) as team_size
+                       count(DISTINCT m) as team_size,
+                       count(DISTINCT tp) as project_count
             """)
             cost_analysis = []
             for r in proj_records:
@@ -391,9 +396,10 @@ async def get_dashboard_data(role: str):
 
                 # Financial metrics per project
                 total_tickets = active + done
-                proj_ctc = round(team_size * AVG_DAILY_COST * 30 / max(r["project_count"] if r.get("project_count") else 1, 1))  # share of team CTC
-                # Revenue from delivered tickets
-                proj_revenue = done * AVG_TICKET_REVENUE_UNIT
+                project_count = r["project_count"] or 1
+                proj_ctc = round(team_size * AVG_DAILY_COST * 30 / max(project_count, 1))  # share of team CTC
+                # Revenue from delivered tickets + base member contribution share
+                proj_revenue = (done * AVG_TICKET_REVENUE_UNIT) + round(team_size * BASE_REVENUE_PER_MEMBER / max(project_count, 1))
                 # Expected future revenue from active tickets (weighted by progress)
                 progress_val = proj.get("progress", 0) or 0
                 expected_revenue = round(active * AVG_TICKET_REVENUE_UNIT * (progress_val / 100), 0)

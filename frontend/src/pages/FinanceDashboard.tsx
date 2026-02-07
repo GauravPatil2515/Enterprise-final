@@ -212,13 +212,14 @@ const FinanceDashboard = () => {
                   </div>
                   <ResponsiveContainer width="100%" height={240}>
                     <BarChart data={teamChartData} barGap={4}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                      <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                      <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                      <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
                       <Tooltip
                         formatter={(value: number) => [`$${value.toLocaleString()}`, '']}
-                        contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: 12 }}
+                        contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: 12 }}
                       />
+                      <Legend />
                       <Bar dataKey="revenue" fill="#34d399" radius={[4, 4, 0, 0]} name="Revenue" />
                       <Bar dataKey="ctc" fill="#818cf8" radius={[4, 4, 0, 0]} name="Cost to Company" />
                     </BarChart>
@@ -249,8 +250,9 @@ const FinanceDashboard = () => {
                       </Pie>
                       <Tooltip
                         formatter={(value: number) => [`$${value.toLocaleString()}`, 'CTC']}
-                        contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: 12 }}
+                        contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: 12 }}
                       />
+                      <Legend />
                     </RPieChart>
                   </ResponsiveContainer>
                 </div>
@@ -264,13 +266,14 @@ const FinanceDashboard = () => {
                 </div>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart data={roiChartData} layout="vertical" barSize={20}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} tickFormatter={(v) => `${v}%`} />
-                    <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#94a3b8' }} width={100} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                    <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />
+                    <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={100} />
                     <Tooltip
                       formatter={(value: number) => [`${value}%`, 'ROI']}
-                      contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: 12 }}
+                      contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: 12 }}
                     />
+                    <Legend />
                     <Bar dataKey="roi" radius={[0, 4, 4, 0]}>
                       {roiChartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.roi >= 0 ? '#34d399' : '#ef4444'} />
@@ -592,13 +595,14 @@ const FinanceDashboard = () => {
                     }))}
                     barGap={2}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                    <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#94a3b8' }} />
-                    <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                    <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} />
                     <Tooltip
                       formatter={(value: number) => [`$${value.toLocaleString()}`, '']}
-                      contentStyle={{ background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', fontSize: 12 }}
+                      contentStyle={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', fontSize: 12 }}
                     />
+                    <Legend />
                     <Bar dataKey="realized" fill="#34d399" radius={[4, 4, 0, 0]} name="Realized Revenue" />
                     <Bar dataKey="expected" fill="#818cf8" radius={[4, 4, 0, 0]} name="Expected Revenue" />
                   </BarChart>

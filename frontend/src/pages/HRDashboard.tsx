@@ -19,6 +19,17 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import NarrativeCard from '@/components/NarrativeCard';
 import { Button } from '@/components/ui/button';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+  Legend,
+  Cell,
+} from 'recharts';
 
 const BURNOUT_THRESHOLD = 4; // tickets before burnout warning
 const OVERLOAD_THRESHOLD = 3;
@@ -183,12 +194,12 @@ const HRDashboard = () => {
           <motion.div variants={itemVariants}>
             <h2 className="text-lg font-semibold mb-3">Workload Distribution</h2>
             <div className="rounded-xl border bg-card p-4 space-y-3">
-              {members.map((member: any) => {
+              {members.map((member: any, idx: number) => {
                 const loadPct = Math.round((member.active_tickets / maxTickets) * 100);
                 const isOverloaded = member.active_tickets >= OVERLOAD_THRESHOLD;
                 const isBurnout = member.active_tickets >= BURNOUT_THRESHOLD;
                 return (
-                  <div key={`workload-${member.id}`} className="flex items-center gap-4">
+                  <div key={`workload-${member.team}-${member.id}-${idx}`} className="flex items-center gap-4">
                     <Avatar className="h-9 w-9">
                       <AvatarImage src={member.avatar} />
                       <AvatarFallback>{member.name?.charAt(0)}</AvatarFallback>
@@ -233,12 +244,98 @@ const HRDashboard = () => {
             </div>
           </motion.div>
 
-          {/* Members List */}}
+          {/* Senior vs Junior Comparison */}
+          <motion.div variants={itemVariants}>
+            <h2 className="text-lg font-semibold mb-3">Senior vs Junior Comparison</h2>
+            {(() => {
+              const seniorKeywords = ['senior', 'sr.', 'sr ', 'lead', 'principal', 'staff', 'architect'];
+              const seniors = members.filter((m: any) =>
+                seniorKeywords.some(k => (m.role || '').toLowerCase().includes(k))
+              );
+              const juniors = members.filter((m: any) =>
+                !seniorKeywords.some(k => (m.role || '').toLowerCase().includes(k))
+              );
+              const avgSrTickets = seniors.length > 0
+                ? Math.round((seniors.reduce((a: number, m: any) => a + (m.active_tickets || 0), 0) / seniors.length) * 10) / 10
+                : 0;
+              const avgJrTickets = juniors.length > 0
+                ? Math.round((juniors.reduce((a: number, m: any) => a + (m.active_tickets || 0), 0) / juniors.length) * 10) / 10
+                : 0;
+              const srBurnout = seniors.filter((m: any) => m.active_tickets >= BURNOUT_THRESHOLD).length;
+              const jrBurnout = juniors.filter((m: any) => m.active_tickets >= BURNOUT_THRESHOLD).length;
+
+              const comparisonData = [
+                { metric: 'Headcount', Senior: seniors.length, Junior: juniors.length },
+                { metric: 'Avg Tickets', Senior: avgSrTickets, Junior: avgJrTickets },
+                { metric: 'Burnout Risk', Senior: srBurnout, Junior: jrBurnout },
+                { metric: 'Overloaded', Senior: seniors.filter((m: any) => m.active_tickets >= OVERLOAD_THRESHOLD).length, Junior: juniors.filter((m: any) => m.active_tickets >= OVERLOAD_THRESHOLD).length },
+              ];
+
+              return (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Summary Cards */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl border bg-card p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400">
+                          <Users className="h-4 w-4" />
+                        </span>
+                        <span className="text-xs font-medium text-muted-foreground">Senior Staff</span>
+                      </div>
+                      <p className="text-2xl font-bold">{seniors.length}</p>
+                      <p className="text-xs text-muted-foreground">Avg {avgSrTickets} tickets</p>
+                    </div>
+                    <div className="rounded-xl border bg-card p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400">
+                          <Users className="h-4 w-4" />
+                        </span>
+                        <span className="text-xs font-medium text-muted-foreground">Junior Staff</span>
+                      </div>
+                      <p className="text-2xl font-bold">{juniors.length}</p>
+                      <p className="text-xs text-muted-foreground">Avg {avgJrTickets} tickets</p>
+                    </div>
+                    <div className="rounded-xl border bg-card p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Flame className="h-4 w-4 text-orange-400" />
+                        <span className="text-xs font-medium text-muted-foreground">Sr Burnout Risk</span>
+                      </div>
+                      <p className="text-2xl font-bold text-orange-400">{srBurnout}</p>
+                    </div>
+                    <div className="rounded-xl border bg-card p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Flame className="h-4 w-4 text-orange-400" />
+                        <span className="text-xs font-medium text-muted-foreground">Jr Burnout Risk</span>
+                      </div>
+                      <p className="text-2xl font-bold text-orange-400">{jrBurnout}</p>
+                    </div>
+                  </div>
+                  {/* Chart */}
+                  <div className="rounded-xl border bg-card p-4">
+                    <h3 className="text-sm font-semibold mb-3">Workload Comparison</h3>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={comparisonData} barGap={4}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
+                        <XAxis dataKey="metric" tick={{ fontSize: 11 }} />
+                        <YAxis tick={{ fontSize: 11 }} />
+                        <Tooltip />
+                        <Legend />
+                        <Bar dataKey="Senior" fill="#818cf8" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="Junior" fill="#22d3ee" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              );
+            })()}
+          </motion.div>
+
+          {/* Members List */}
           <motion.div variants={itemVariants}>
             <h2 className="text-lg font-semibold mb-3">All Members</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              {members.map((member: any) => (
-                <div key={`member-${member.id}`} className="rounded-xl border bg-card p-4 flex items-center gap-3 hover:shadow-md transition-shadow">
+              {members.map((member: any, idx: number) => (
+                <div key={`member-${member.team}-${member.id}-${idx}`} className="rounded-xl border bg-card p-4 flex items-center gap-3 hover:shadow-md transition-shadow">
                   <Avatar className="h-10 w-10">
                     <AvatarImage src={member.avatar} />
                     <AvatarFallback>{member.name?.charAt(0)}</AvatarFallback>
