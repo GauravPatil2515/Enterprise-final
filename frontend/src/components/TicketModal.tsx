@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Calendar, User, Tag, Paperclip, Flag } from 'lucide-react';
-import { Ticket, Priority, TicketStatus, members } from '@/utils/mockData';
+import type { Ticket, Priority, TicketStatus, Member } from '@/utils/mockData';
+import { api } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,12 +31,13 @@ export const TicketModal = ({
   onSave,
   mode,
 }: TicketModalProps) => {
+  const [members, setMembers] = useState<Member[]>([]);
   const [formData, setFormData] = useState<Partial<Ticket>>({
     title: ticket?.title || '',
     description: ticket?.description || '',
     priority: ticket?.priority || 'Medium',
     status: ticket?.status || initialStatus,
-    assignee: ticket?.assignee || members[0],
+    assignee: ticket?.assignee,
     dueDate: ticket?.dueDate || new Date().toISOString().split('T')[0],
     labels: ticket?.labels || [],
     attachments: ticket?.attachments || 0,
@@ -43,6 +45,16 @@ export const TicketModal = ({
   });
 
   const [labelInput, setLabelInput] = useState('');
+
+  // Load members from API (not mock data)
+  useEffect(() => {
+    api.getMembers().then((m) => {
+      setMembers(m);
+      if (!formData.assignee && m.length > 0) {
+        setFormData((prev) => ({ ...prev, assignee: m[0] }));
+      }
+    }).catch(() => {});
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

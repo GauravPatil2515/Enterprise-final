@@ -1,19 +1,18 @@
 import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  LayoutDashboard, 
-  FolderKanban, 
-  Users, 
+import {
+  LayoutDashboard,
+  FolderKanban,
+  Users,
   Shield,
   ChevronDown,
   ChevronRight,
-  Plus,
   Menu,
   X,
   UserCog,
   GitGraph,
-  Activity,
   MessageCircle,
+  Cpu,
 } from 'lucide-react';
 import { useTeams } from '@/context/TeamsContext';
 import { cn } from '@/lib/utils';
@@ -30,15 +29,15 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const [expandedTeams, setExpandedTeams] = useState<string[]>([state.teams[0]?.id || '']);
 
   const toggleTeam = (teamId: string) => {
-    setExpandedTeams(prev =>
-      prev.includes(teamId) ? prev.filter(id => id !== teamId) : [...prev, teamId]
+    setExpandedTeams((prev) =>
+      prev.includes(teamId) ? prev.filter((id) => id !== teamId) : [...prev, teamId],
     );
   };
 
   const handleTeamSelect = (teamId: string) => {
     dispatch({ type: 'SELECT_TEAM', payload: teamId });
     if (!expandedTeams.includes(teamId)) {
-      setExpandedTeams(prev => [...prev, teamId]);
+      setExpandedTeams((prev) => [...prev, teamId]);
     }
   };
 
@@ -48,23 +47,29 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   };
 
   const navItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/' },
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
     { icon: UserCog, label: 'Role Dashboard', path: '/role-dashboard' },
     { icon: Users, label: 'Teams', path: '/teams' },
     { icon: FolderKanban, label: 'All Projects', path: '/projects' },
-    { icon: GitGraph, label: 'Graph View', path: '/graph' },
-    { icon: MessageCircle, label: 'AI Chat', path: '/chat' },
+  ];
+
+  const aiItems = [
+    { icon: MessageCircle, label: 'AI Co-Pilot', path: '/chat', accent: true },
+    { icon: GitGraph, label: 'Knowledge Graph', path: '/graph' },
   ];
 
   const sidebarContent = (
     <div className="flex h-full flex-col bg-sidebar">
       {/* Logo */}
-      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-          <FolderKanban className="h-5 w-5 text-primary-foreground" />
+      <div className="flex h-14 items-center gap-3 border-b border-sidebar-border px-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600">
+          <Cpu className="h-4.5 w-4.5 text-white" />
         </div>
-        <span className="text-lg font-semibold text-sidebar-foreground">Jira Clone</span>
-        <button 
+        <div className="flex-1 min-w-0">
+          <span className="text-sm font-bold text-sidebar-foreground tracking-tight">DeliverIQ</span>
+          <p className="text-[10px] text-muted-foreground leading-none mt-0.5">Decision Intelligence</p>
+        </div>
+        <button
           onClick={onClose}
           className="ml-auto md:hidden text-muted-foreground hover:text-foreground"
         >
@@ -73,8 +78,9 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-4 scrollbar-thin">
-        <div className="space-y-1">
+      <nav className="flex-1 overflow-y-auto p-3 scrollbar-thin">
+        {/* Main nav */}
+        <div className="space-y-0.5">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path;
             return (
@@ -86,7 +92,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                   'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                   isActive
                     ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                    : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
                 )}
               >
                 <item.icon className="h-4 w-4" />
@@ -96,18 +102,48 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
           })}
         </div>
 
-        {/* Teams Section */}
-        <div className="mt-6">
-          <div className="flex items-center justify-between px-3 py-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Teams & Projects
-            </span>
-            <button className="rounded p-1 text-muted-foreground hover:bg-sidebar-accent hover:text-foreground">
-              <Plus className="h-4 w-4" />
-            </button>
+        {/* AI Section */}
+        <div className="mt-5">
+          <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+            AI Intelligence
+          </p>
+          <div className="space-y-0.5">
+            {aiItems.map((item) => {
+              const isActive = location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  onClick={onClose}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    isActive
+                      ? 'bg-primary/15 text-primary'
+                      : item.accent
+                        ? 'text-primary/80 hover:bg-primary/10 hover:text-primary'
+                        : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
+                  )}
+                >
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                  {item.accent && (
+                    <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-primary/20 text-primary">
+                      AI
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
           </div>
+        </div>
 
-          <div className="mt-2 space-y-1">
+        {/* Teams Section */}
+        <div className="mt-5">
+          <p className="px-3 mb-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+            Teams & Projects
+          </p>
+
+          <div className="space-y-0.5">
             {state.teams.map((team) => {
               const isExpanded = expandedTeams.includes(team.id);
               const isSelected = state.selectedTeamId === team.id;
@@ -123,20 +159,20 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                       'flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                       isSelected
                         ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                        : 'text-sidebar-foreground hover:bg-sidebar-accent/50'
+                        : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50',
                     )}
                   >
                     {isExpanded ? (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                     ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                      <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
                     )}
                     <div
-                      className="h-2 w-2 rounded-full"
+                      className="h-2 w-2 rounded-full shrink-0"
                       style={{ backgroundColor: team.color }}
                     />
                     <span className="truncate">{team.name}</span>
-                    <span className="ml-auto text-xs text-muted-foreground">
+                    <span className="ml-auto text-[10px] text-muted-foreground">
                       {team.projects.length}
                     </span>
                   </button>
@@ -148,14 +184,13 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         transition={{ duration: 0.2 }}
-                        className="ml-4 overflow-hidden"
+                        className="ml-3 overflow-hidden"
                       >
                         {team.projects.map((project) => {
-                          const isProjectActive =
-                            state.selectedProjectId === project.id;
+                          const isProjectActive = state.selectedProjectId === project.id;
 
                           return (
-                            <div key={project.id} className="flex items-center gap-1">
+                            <div key={project.id} className="flex items-center gap-0.5">
                               <Link
                                 to={`/project/${team.id}/${project.id}`}
                                 onClick={() => {
@@ -163,22 +198,22 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                                   onClose();
                                 }}
                                 className={cn(
-                                  'flex-1 flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors',
+                                  'flex-1 flex items-center gap-2 rounded-lg px-3 py-1.5 text-sm transition-colors',
                                   isProjectActive
                                     ? 'bg-primary/10 text-primary font-medium'
-                                    : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground'
+                                    : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground',
                                 )}
                               >
-                                <span>{project.icon}</span>
-                                <span className="truncate">{project.name}</span>
+                                <span className="text-sm">{project.icon}</span>
+                                <span className="truncate text-xs">{project.name}</span>
                               </Link>
                               <Link
                                 to={`/project/${team.id}/${project.id}/risk`}
                                 onClick={onClose}
-                                className="p-1.5 rounded-md text-muted-foreground hover:text-orange-500 hover:bg-orange-500/10 transition-colors"
+                                className="p-1 rounded-md text-muted-foreground/50 hover:text-orange-500 hover:bg-orange-500/10 transition-colors"
                                 title="Risk Analysis"
                               >
-                                <Shield className="h-3.5 w-3.5" />
+                                <Shield className="h-3 w-3" />
                               </Link>
                             </div>
                           );
@@ -194,10 +229,10 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       </nav>
 
       {/* Bottom */}
-      <div className="border-t border-sidebar-border p-4">
-        <div className="flex items-center gap-3 px-3 py-2 text-xs text-muted-foreground">
-          <Activity className="h-3.5 w-3.5" />
-          Decision Intelligence Platform
+      <div className="border-t border-sidebar-border p-3">
+        <div className="flex items-center gap-2 px-3 py-2 text-[10px] text-muted-foreground/50">
+          <Cpu className="h-3 w-3" />
+          Graph → Agents → LLM → Human
         </div>
       </div>
     </div>

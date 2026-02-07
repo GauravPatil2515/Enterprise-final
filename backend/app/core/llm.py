@@ -1,6 +1,9 @@
 from typing import Generator, List, Dict
 from openai import OpenAI
 from .config import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = (
     "You are an expert Engineering Delivery Analyst and AI Co-Pilot. "
@@ -36,7 +39,8 @@ class FeatherlessClient:
             )
             return response.choices[0].message.content
         except Exception as e:
-            return f"Error generating reasoning: {str(e)}"
+            logger.error(f"LLM reasoning error: {e}")
+            raise RuntimeError(f"LLM reasoning failed: {str(e)}") from e
 
     def chat(self, messages: List[Dict[str, str]], temperature: float = 0.4) -> str:
         """
@@ -52,7 +56,8 @@ class FeatherlessClient:
             )
             return response.choices[0].message.content
         except Exception as e:
-            return f"Error in chat: {str(e)}"
+            logger.error(f"LLM chat error: {e}")
+            raise RuntimeError(f"LLM chat failed: {str(e)}") from e
 
     def chat_stream(self, messages: List[Dict[str, str]], temperature: float = 0.4) -> Generator[str, None, None]:
         """

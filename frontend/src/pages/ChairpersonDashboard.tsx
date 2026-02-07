@@ -11,10 +11,16 @@ import {
   ArrowUpRight,
   Activity,
   Eye,
+  XCircle,
+  Loader2,
+  Clock,
 } from 'lucide-react';
 import { api, type DashboardData, type AnalysisResult } from '@/services/api';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import NarrativeCard from '@/components/NarrativeCard';
+import ReactMarkdown from 'react-markdown';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 
 const riskColors: Record<string, string> = {
   HIGH: 'text-red-400 bg-red-500/20',
@@ -24,15 +30,29 @@ const riskColors: Record<string, string> = {
 
 const ChairpersonDashboard = () => {
   const [data, setData] = useState<DashboardData | null>(null);
-  const [analyses, setAnalyses] = useState<Record<string, AnalysisResult>>({});
+  const [analyses, setAnalyses] = useState<Record<string, { result: AnalysisResult; timestamp: number }>>({});
   const [loading, setLoading] = useState(true);
   const [analyzingId, setAnalyzingId] = useState<string | null>(null);
+  const [analyzingAll, setAnalyzingAll] = useState(false);
+  const [companyReport, setCompanyReport] = useState<any>(null);
+  const [generatedReport, setGeneratedReport] = useState<string | null>(null);
+  const [generatingReport, setGeneratingReport] = useState(false);
+  const [reportTimestamp, setReportTimestamp] = useState<string | null>(null);
 
   useEffect(() => {
     api.getDashboardData('chairperson')
       .then(setData)
-      .catch(console.error)
+      .catch((err) => {
+        import('sonner').then(({ toast }) => toast.error(err?.message || 'Failed to load dashboard'));
+      })
       .finally(() => setLoading(false));
+    
+    // Fetch company report data
+    api.getCompanyReport()
+      .then(setCompanyReport)
+      .catch((err) => {
+        console.error('Failed to load company report:', err);
+      });
   }, []);
 
   const projects = data?.projects || [];
@@ -43,11 +63,43 @@ const ChairpersonDashboard = () => {
     setAnalyzingId(projectId);
     try {
       const result = await api.analyzeProject(projectId);
-      setAnalyses((prev) => ({ ...prev, [projectId]: result }));
-    } catch (err) {
-      console.error('Analysis failed:', err);
+      setAnalyses((prev) => ({ ...prev, [projectId]: { result, timestamp: Date.now() } }));
+    } catch (err: any) {
+      import('sonner').then(({ toast }) => toast.error(err?.message || 'Risk analysis failed'));
     } finally {
       setAnalyzingId(null);
+    }
+  };
+
+  const handleAnalyzeAll = async () => {
+    setAnalyzingAll(true);
+    try {
+      for (const proj of projects) {
+        setAnalyzingId(proj.id);
+        try {
+          const result = await api.analyzeProject(proj.id);
+          setAnalyses((prev) => ({ ...prev, [proj.id]: { result, timestamp: Date.now() } }));
+        } catch {
+          // continue analyzing remaining
+        }
+      }
+    } finally {
+      setAnalyzingId(null);
+      setAnalyzingAll(false);
+    }
+  };
+
+  const handleGenerateCompanyReport = async () => {
+    setGeneratingReport(true);
+    try {
+      const result = await api.generateCompanyReport();
+      setGeneratedReport(result.report);
+      setReportTimestamp(result.generated_at);
+      import('sonner').then(({ toast }) => toast.success('Company report generated successfully'));
+    } catch (err: any) {
+      import('sonner').then(({ toast }) => toast.error(err?.message || 'Failed to generate company report'));
+    } finally {
+      setGeneratingReport(false);
     }
   };
 
@@ -90,12 +142,145 @@ const ChairpersonDashboard = () => {
             ))}
           </div>
 
+          {/* AI Narrative */}
+          <NarrativeCard role="chairperson" />
+
+          {/* Company Report Section */}
+          <div className="rounded-xl border bg-card p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">Enterprise Intelligence Report</h2>
+                <p className="text-sm text-muted-foreground">AI-powered comprehensive company analysis</p>
+              </div>
+              <button
+                onClick={handleGenerateCompanyReport}
+                disabled={generatingReport}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-purple-700 text-white hover:from-purple-600 hover:to-purple-800 transition-all disabled:opacity-50"
+              >
+                {generatingReport ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</>
+                ) : (
+                  <>🤖 Generate Full Report</>
+                )}
+              </button>
+            </div>
+
+            {/* Company Summary Stats */}
+            {companyReport?.summary && (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                <div className="rounded-lg border bg-muted/50 p-3">
+                  <div className="text-xs text-muted-foreground mb-1">Teams</div>
+                  <div className="text-2xl font-bold">{companyReport.summary.total_teams}</div>
+                </div>
+                <div className="rounded-lg border bg-muted/50 p-3">
+                  <div className="text-xs text-muted-foreground mb-1">Workforce</div>
+                  <div className="text-2xl font-bold">{companyReport.summary.total_members}</div>
+                </div>
+                <div className="rounded-lg border bg-muted/50 p-3">
+                  <div className="text-xs text-muted-foreground mb-1">Projects</div>
+                  <div className="text-2xl font-bold">{companyReport.summary.total_projects}</div>
+                </div>
+                <div className="rounded-lg border bg-muted/50 p-3">
+                  <div className="text-xs text-muted-foreground mb-1">Completion</div>
+                  <div className="text-2xl font-bold">{Math.round(companyReport.summary.completion_rate)}%</div>
+                </div>
+                <div className="rounded-lg border bg-muted/50 p-3">
+                  <div className="text-xs text-muted-foreground mb-1">Avg Progress</div>
+                  <div className="text-2xl font-bold">{Math.round(companyReport.summary.avg_progress)}%</div>
+                </div>
+              </div>
+            )}
+
+            {/* Charts */}
+            {companyReport?.summary && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Workforce Distribution */}
+                <div className="rounded-lg border p-4">
+                  <h3 className="text-sm font-semibold mb-3">Workforce Allocation</h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'Overloaded', value: companyReport.summary.overloaded_members, fill: '#ef4444' },
+                          { name: 'Normal', value: companyReport.summary.total_members - companyReport.summary.overloaded_members - companyReport.summary.idle_members, fill: '#22c55e' },
+                          { name: 'Idle', value: companyReport.summary.idle_members, fill: '#f59e0b' },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={70}
+                        dataKey="value"
+                        label={(entry) => `${entry.name}: ${entry.value}`}
+                      >
+                        {[0, 1, 2].map((_, idx) => (
+                          <Cell key={idx} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Ticket Status */}
+                <div className="rounded-lg border p-4">
+                  <h3 className="text-sm font-semibold mb-3">Ticket Status Overview</h3>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart
+                      data={[
+                        { status: 'Active', count: companyReport.summary.total_active_tickets },
+                        { status: 'Done', count: companyReport.summary.total_done_tickets },
+                        { status: 'Blocked', count: companyReport.summary.total_blocked },
+                      ]}
+                    >
+                      <XAxis dataKey="status" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="count" fill="#8b5cf6" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* Generated Report */}
+            {generatedReport && (
+              <div className="rounded-lg border bg-muted/30 p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold">AI-Generated Analysis</h3>
+                  {reportTimestamp && (
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {new Date(reportTimestamp).toLocaleString()}
+                    </span>
+                  )}
+                </div>
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <ReactMarkdown>{generatedReport}</ReactMarkdown>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Projects with Risk */}
           <div>
-            <h2 className="text-lg font-semibold mb-3">All Projects — Risk Status</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg font-semibold">All Projects — Risk Status</h2>
+              <button
+                onClick={handleAnalyzeAll}
+                disabled={analyzingAll || !!analyzingId}
+                className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
+              >
+                {analyzingAll ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Analyzing All...</>
+                ) : (
+                  <>🤖 Analyze All Projects</>
+                )}
+              </button>
+            </div>
             <div className="space-y-3">
               {projects.map((proj: any) => {
-                const analysis = analyses[proj.id];
+                const analysisEntry = analyses[proj.id];
+                const analysis = analysisEntry?.result;
+                const analysisTime = analysisEntry?.timestamp;
                 const isAnalyzing = analyzingId === proj.id;
 
                 return (
@@ -130,14 +315,22 @@ const ChairpersonDashboard = () => {
 
                       <div className="flex items-center gap-2">
                         {analysis && (
-                          <span
-                            className={cn(
-                              'text-xs font-bold px-2 py-1 rounded',
-                              riskColors[analysis.risk_level] || '',
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={cn(
+                                'text-xs font-bold px-2 py-1 rounded',
+                                riskColors[analysis.risk_level] || '',
+                              )}
+                            >
+                              {analysis.risk_level} ({Math.round(analysis.risk_score * 100)}%)
+                            </span>
+                            {analysisTime && (
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {new Date(analysisTime).toLocaleTimeString()}
+                              </span>
                             )}
-                          >
-                            {analysis.risk_level} ({Math.round(analysis.risk_score * 100)}%)
-                          </span>
+                          </div>
                         )}
                         <button
                           onClick={() => handleAnalyze(proj.id)}
@@ -186,14 +379,22 @@ const ChairpersonDashboard = () => {
                                   key={dc.action}
                                   className={cn(
                                     'rounded-lg border p-2.5 text-xs',
-                                    dc.recommended && 'border-green-500/50 bg-green-500/5',
+                                    dc.recommended
+                                      ? 'border-green-500/50 bg-green-500/5'
+                                      : !dc.feasible
+                                        ? 'border-red-500/30 bg-red-500/5'
+                                        : '',
                                   )}
                                 >
                                   <div className="flex items-center justify-between mb-1">
                                     <span className="font-semibold">{dc.action}</span>
-                                    {dc.recommended && (
+                                    {dc.recommended ? (
                                       <span className="text-green-400 text-[10px] font-bold">✓ RECOMMENDED</span>
-                                    )}
+                                    ) : !dc.feasible ? (
+                                      <span className="text-red-400 text-[10px] font-bold flex items-center gap-0.5">
+                                        <XCircle className="h-3 w-3" /> NOT RECOMMENDED
+                                      </span>
+                                    ) : null}
                                   </div>
                                   <p className="text-muted-foreground">{dc.reason}</p>
                                   <div className="flex items-center gap-3 mt-1">

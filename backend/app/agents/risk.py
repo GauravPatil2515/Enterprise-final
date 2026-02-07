@@ -134,7 +134,14 @@ class DeliveryRiskAgent:
                 except ValueError:
                     pass  # Skip malformed dates
 
-        # Normalize
+        # Normalize: weight by ticket count so projects with many tickets
+        # aren't equally penalized as tiny projects with few tickets
+        if total_active > 0 and risk_score > 0:
+            # Base normalization: scale raw risk by the ratio of flagged tickets
+            flagged_count = len(blocked_tickets) + len(overdue_tickets) + len(near_deadline_tickets)
+            issue_ratio = flagged_count / max(total_active, 1)
+            # Blend: 60% raw signal strength + 40% issue prevalence
+            risk_score = (risk_score * 0.6) + (min(risk_score, 1.0) * issue_ratio * 0.4)
         risk_score = min(risk_score, 1.0)
         risk_level = get_risk_level(risk_score)
 

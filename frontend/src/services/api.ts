@@ -219,4 +219,35 @@ export const api = {
   getSystemUsers: () => apiFetch<SystemUser[]>('/system-users'),
   getSystemUser: (userId: string) => apiFetch<SystemUser>(`/system-users/${userId}`),
   getDashboardData: (role: string) => apiFetch<DashboardData>(`/dashboard/${role}`),
+
+  // Executive AI Narrative
+  getNarrative: (role: string) =>
+    apiFetch<{ role: string; narrative: string }>(`/narrative/${role}`),
+
+  // Company Report (Chairperson)
+  getCompanyReport: () =>
+    apiFetch<{
+      teams: any[];
+      projects: any[];
+      workforce: any[];
+      summary: {
+        total_teams: number;
+        total_members: number;
+        total_projects: number;
+        total_active_tickets: number;
+        total_done_tickets: number;
+        total_blocked: number;
+        avg_progress: number;
+        completion_rate: number;
+        overloaded_members: number;
+        idle_members: number;
+      };
+    }>('/company-report'),
+
+  generateCompanyReport: () =>
+    apiFetch<{
+      report: string;
+      summary: any;
+      generated_at: string;
+    }>('/company-report/generate', { method: 'POST' }),
 };

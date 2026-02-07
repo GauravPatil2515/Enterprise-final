@@ -106,7 +106,7 @@ const ProjectView = () => {
       <div className="flex h-96 items-center justify-center">
         <div className="text-center">
           <h2 className="text-xl font-semibold mb-2">Project not found</h2>
-          <Link to="/" className="text-primary hover:underline">
+          <Link to="/dashboard" className="text-primary hover:underline">
             Go back to Dashboard
           </Link>
         </div>
@@ -160,7 +160,7 @@ const ProjectView = () => {
       >
         <div>
           <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
-            <Link to="/" className="hover:text-foreground transition-colors flex items-center gap-1">
+            <Link to="/dashboard" className="hover:text-foreground transition-colors flex items-center gap-1">
               Dashboard
             </Link>
             <span className="text-border">/</span>
@@ -210,7 +210,7 @@ const ProjectView = () => {
             <span className="text-muted-foreground font-medium">Progress</span>
             <span className="font-semibold text-foreground">{progress}%</span>
           </div>
-          <Progress value={progress} className="h-2 w-full bg-secondary" indicatorClassName="bg-primary" />
+          <Progress value={progress} className="h-2 w-full" />
           <span className="text-xs text-muted-foreground">
             {doneCount} of {allTickets.length} tasks completed
           </span>

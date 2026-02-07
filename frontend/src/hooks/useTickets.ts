@@ -92,9 +92,9 @@ export const useTickets = (options: UseTicketsOptions = {}) => {
       });
 
       // Sync to backend
-      api.updateTicketStatus(ticketId, newStatus).catch(err =>
-        console.warn('Failed to sync ticket status:', err)
-      );
+      api.updateTicketStatus(ticketId, newStatus).catch((err) => {
+        import('sonner').then(({ toast }) => toast.error(`Status sync failed: ${err?.message || 'Unknown error'}`));
+      });
     },
     [dispatch, options]
   );
@@ -111,9 +111,9 @@ export const useTickets = (options: UseTicketsOptions = {}) => {
       });
 
       // Sync to backend
-      api.createTicket(projectId, ticket).catch(err =>
-        console.warn('Failed to sync new ticket:', err)
-      );
+      api.createTicket(projectId, ticket).catch((err) => {
+        import('sonner').then(({ toast }) => toast.error(`Failed to create ticket: ${err?.message || 'Unknown error'}`));
+      });
     },
     [dispatch, options]
   );
@@ -130,9 +130,9 @@ export const useTickets = (options: UseTicketsOptions = {}) => {
       });
 
       // Sync to backend
-      api.updateTicket(ticket.id, ticket).catch(err =>
-        console.warn('Failed to sync ticket update:', err)
-      );
+      api.updateTicket(ticket.id, ticket).catch((err) => {
+        import('sonner').then(({ toast }) => toast.error(`Failed to update ticket: ${err?.message || 'Unknown error'}`));
+      });
     },
     [dispatch, options]
   );
@@ -149,9 +149,9 @@ export const useTickets = (options: UseTicketsOptions = {}) => {
       });
 
       // Sync to backend
-      api.deleteTicket(ticketId).catch(err =>
-        console.warn('Failed to sync ticket deletion:', err)
-      );
+      api.deleteTicket(ticketId).catch((err) => {
+        import('sonner').then(({ toast }) => toast.error(`Failed to delete ticket: ${err?.message || 'Unknown error'}`));
+      });
     },
     [dispatch, options]
   );

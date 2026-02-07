@@ -56,7 +56,7 @@ const RiskAnalysis = () => {
   // Fetch risk history for trend chart
   useEffect(() => {
     if (!projectId) return;
-    api.getRiskHistory(projectId).then(setHistory).catch(() => {});
+    api.getRiskHistory(projectId).then(setHistory).catch((err) => console.warn('Risk history unavailable:', err));
   }, [projectId]);
 
   // Draw trend sparkline on canvas
@@ -139,8 +139,9 @@ const RiskAnalysis = () => {
     try {
       const snap = await api.saveRiskSnapshot(projectId);
       setHistory((prev) => [...prev, snap]);
-    } catch {
-      // silent fail
+    } catch (err: any) {
+      const { toast } = await import('sonner');
+      toast.error(err?.message || 'Failed to save snapshot');
     }
     setSavingSnapshot(false);
   };
@@ -229,7 +230,7 @@ const RiskAnalysis = () => {
       {/* Breadcrumb */}
       <motion.div variants={itemVariants}>
         <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground mb-2">
-          <Link to="/" className="hover:text-foreground transition-colors">Dashboard</Link>
+          <Link to="/dashboard" className="hover:text-foreground transition-colors">Dashboard</Link>
           <span className="text-border">/</span>
           <Link to={`/project/${teamId}/${projectId}`} className="hover:text-foreground transition-colors">
             {project?.name || projectId}

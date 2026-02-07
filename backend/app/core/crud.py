@@ -13,15 +13,22 @@ logger = logging.getLogger(__name__)
 # ============================================================================
 
 def get_all_teams() -> List[Dict[str, Any]]:
-    """Fetch all teams with member counts and project counts."""
+    """Fetch all teams with members, projects, and tickets in a single query."""
     query = """
     MATCH (t:Team)
     OPTIONAL MATCH (t)<-[:MEMBER_OF]-(m:Member)
     OPTIONAL MATCH (t)-[:HAS_PROJECT]->(p:Project)
-    WITH t, collect(DISTINCT m) as members, collect(DISTINCT p) as projects
+    OPTIONAL MATCH (p)-[:HAS_TICKET]->(tk:Ticket)
+    OPTIONAL MATCH (tk)<-[:ASSIGNED_TO]-(a:Member)
+    WITH t, 
+         collect(DISTINCT m { .* }) as members,
+         p, 
+         collect(DISTINCT tk { .*, assignee: a { .* } }) as tickets
+    WITH t, members, 
+         collect(DISTINCT p { .*, tickets: tickets }) as projects
     RETURN t { .*, 
-        members: [m IN members | m { .* }],
-        projects: [p IN projects | p { .* }]
+        members: members,
+        projects: projects
     } as team
     ORDER BY t.name
     """
@@ -29,24 +36,44 @@ def get_all_teams() -> List[Dict[str, Any]]:
     teams = []
     for r in records:
         team = dict(r["team"])
-        # Attach tickets to each project
+        # Normalize ticket data
         for proj in team.get("projects", []):
-            proj_tickets = get_tickets_for_project(proj["id"])
-            proj["tickets"] = proj_tickets
+            normalized_tickets = []
+            for ticket in proj.get("tickets", []):
+                if not ticket.get("id"):
+                    continue
+                ticket = dict(ticket)
+                # Ensure labels is a list
+                if "labels" in ticket and isinstance(ticket["labels"], str):
+                    ticket["labels"] = ticket["labels"].split(",") if ticket["labels"] else []
+                elif "labels" not in ticket:
+                    ticket["labels"] = []
+                # Ensure assignee exists
+                if not ticket.get("assignee") or not ticket["assignee"].get("id"):
+                    ticket["assignee"] = {"id": "unassigned", "name": "Unassigned", "avatar": "", "role": "", "email": ""}
+                normalized_tickets.append(ticket)
+            proj["tickets"] = normalized_tickets
         teams.append(team)
     return teams
 
 
 def get_team(team_id: str) -> Optional[Dict[str, Any]]:
-    """Fetch a single team with members and projects."""
+    """Fetch a single team with members, projects, and tickets in a single query."""
     query = """
     MATCH (t:Team {id: $team_id})
     OPTIONAL MATCH (t)<-[:MEMBER_OF]-(m:Member)
     OPTIONAL MATCH (t)-[:HAS_PROJECT]->(p:Project)
-    WITH t, collect(DISTINCT m) as members, collect(DISTINCT p) as projects
+    OPTIONAL MATCH (p)-[:HAS_TICKET]->(tk:Ticket)
+    OPTIONAL MATCH (tk)<-[:ASSIGNED_TO]-(a:Member)
+    WITH t, 
+         collect(DISTINCT m { .* }) as members,
+         p,
+         collect(DISTINCT tk { .*, assignee: a { .* } }) as tickets
+    WITH t, members,
+         collect(DISTINCT p { .*, tickets: tickets }) as projects
     RETURN t { .*,
-        members: [m IN members | m { .* }],
-        projects: [p IN projects | p { .* }]
+        members: members,
+        projects: projects
     } as team
     """
     records, _ = neo4j_client.execute_query(query, {"team_id": team_id})
@@ -54,7 +81,19 @@ def get_team(team_id: str) -> Optional[Dict[str, Any]]:
         return None
     team = dict(records[0]["team"])
     for proj in team.get("projects", []):
-        proj["tickets"] = get_tickets_for_project(proj["id"])
+        normalized_tickets = []
+        for ticket in proj.get("tickets", []):
+            if not ticket.get("id"):
+                continue
+            ticket = dict(ticket)
+            if "labels" in ticket and isinstance(ticket["labels"], str):
+                ticket["labels"] = ticket["labels"].split(",") if ticket["labels"] else []
+            elif "labels" not in ticket:
+                ticket["labels"] = []
+            if not ticket.get("assignee") or not ticket["assignee"].get("id"):
+                ticket["assignee"] = {"id": "unassigned", "name": "Unassigned", "avatar": "", "role": "", "email": ""}
+            normalized_tickets.append(ticket)
+        proj["tickets"] = normalized_tickets
     return team
 
 
