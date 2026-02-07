@@ -6,12 +6,15 @@ from typing import List, Dict, Optional
 import logging
 import time
 from .agents.risk import DeliveryRiskAgent
+from .agents.team_simulator import TeamCompositionSimulator, TeamMutation, ROLE_PROFILES, team_simulator
 from .core.models import AnalysisResult, RiskSnapshot
 from .core.constants import ROLE_DEFINITIONS
 from .core.config import settings
 from .api.routes import router as crud_router
 from .core.neo4j_client import neo4j_client
 from .core.llm import llm_client
+from .core.model_router import model_router, TaskType
+from .core.context_manager import context_assembler
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -93,80 +96,20 @@ class ChatRequest(BaseModel):
 
 
 def _build_project_context(project_id: str) -> str:
-    """Build a rich context block from Neo4j for the given project."""
+    """Build a rich context block from Neo4j for the given project using ContextAssembler."""
     try:
-        records, _ = neo4j_client.execute_query("""
-            MATCH (p:Project {id: $pid})
-            OPTIONAL MATCH (t:Team)-[:HAS_PROJECT]->(p)
-            OPTIONAL MATCH (p)-[:HAS_TICKET]->(tk:Ticket)
-            OPTIONAL MATCH (tk)<-[:ASSIGNED_TO]-(m:Member)
-            OPTIONAL MATCH (tk)<-[:BLOCKED_BY]-(blocker:Ticket)
-            RETURN p { .* } as project,
-                   t.name as team,
-                   collect(DISTINCT tk {
-                       .*, assignee: m.name,
-                       blocker_id: blocker.id,
-                       blocker_title: blocker.title,
-                       blocker_status: blocker.status
-                   }) as tickets
-        """, {"pid": project_id})
-        if not records:
-            return f"No project found with id '{project_id}'."
-
-        rec = records[0]
-        proj = dict(rec["project"]) if rec["project"] else {}
-        tickets = [dict(t) for t in rec["tickets"] if t.get("id")]
-        team = rec["team"] or "Unknown"
-
-        blocked = [t for t in tickets if t.get("blocker_id") and t.get("blocker_status") != "Done"]
-        overdue = []
-        from datetime import datetime
-        now = datetime.now()
-        for t in tickets:
-            if t.get("status") != "Done" and t.get("dueDate"):
-                try:
-                    d = datetime.strptime(t["dueDate"], "%Y-%m-%d")
-                    if d < now:
-                        overdue.append(t)
-                except ValueError:
-                    pass
-        active = [t for t in tickets if t.get("status") != "Done"]
-
-        # Also get latest risk analysis if available (use cache to avoid re-running LLM)
-        risk_info = ""
+        # Get risk analysis result from cache or run fresh
+        risk_result = None
         try:
-            result = _get_cached_risk(project_id)
-            if not result:
-                result = risk_agent.analyze(project_id)
-                _set_cached_risk(project_id, result)
-            risk_info = f"""
-Current Risk Analysis:
-  Risk Score: {result.risk_score:.2f} ({result.risk_level})
-  Primary Reason: {result.primary_reason}
-  Recommended Actions: {', '.join(result.recommended_actions[:3])}
-  Decision Options:
-{chr(10).join([f'    - {d.action}: risk_reduction={d.risk_reduction:.0%}, cost={d.cost}, feasible={d.feasible}, recommended={d.recommended}' for d in result.decision_comparison])}"""
+            risk_result = _get_cached_risk(project_id)
+            if not risk_result:
+                risk_result = risk_agent.analyze(project_id)
+                _set_cached_risk(project_id, risk_result)
         except Exception:
-            risk_info = "  (Risk analysis unavailable)"
+            pass
 
-        ctx = f"""=== PROJECT CONTEXT (live from Neo4j) ===
-Project: {proj.get('name', project_id)} (id: {project_id})
-Team: {team}
-Status: {proj.get('status', 'Unknown')}
-Deadline: {proj.get('deadline', 'Not set')}
-
-Tickets ({len(active)} active / {len(tickets)} total):
-{chr(10).join([f"  - [{t.get('status')}] {t.get('id')}: {t.get('title')} (priority: {t.get('priority')}, assignee: {t.get('assignee', 'unassigned')}, due: {t.get('dueDate', 'none')})" for t in active[:12]])}
-
-Blocked ({len(blocked)}):
-{chr(10).join([f"  - {t.get('id')} blocked by {t.get('blocker_id')} \"{t.get('blocker_title')}\"" for t in blocked]) if blocked else "  None"}
-
-Overdue ({len(overdue)}):
-{chr(10).join([f"  - {t.get('id')}: {t.get('title')} (due: {t.get('dueDate')})" for t in overdue]) if overdue else "  None"}
-
-{risk_info}
-=== END CONTEXT ==="""
-        return ctx
+        ctx = context_assembler.assemble_project_context(project_id, risk_result)
+        return f"{ctx}\n=== END CONTEXT ==="
     except Exception as e:
         return f"Error loading project context: {str(e)}"
 
@@ -175,7 +118,7 @@ Overdue ({len(overdue)}):
 async def chat_endpoint(req: ChatRequest):
     """
     Conversational AI chat — answers questions about projects using real Neo4j data.
-    Supports multi-turn conversation via message history.
+    Uses ModelRouter for intent classification and task-specific model selection.
     """
     try:
         # Build context from project data
@@ -188,8 +131,21 @@ async def chat_endpoint(req: ChatRequest):
         if context and messages:
             messages[0]["content"] = f"{context}\n\nUser question: {messages[0]['content']}"
 
-        response = llm_client.chat(messages)
-        return {"role": "assistant", "content": response}
+        # Classify intent and route to appropriate model
+        user_query = req.messages[-1].content if req.messages else ""
+        intent = model_router.classify_intent(user_query)
+        task = model_router.task_for_intent(intent)
+
+        response = model_router.generate(task, messages)
+        return {
+            "role": "assistant",
+            "content": response,
+            "meta": {
+                "intent": intent,
+                "task_type": task.value,
+                "model": "multi-model-router",
+            },
+        }
 
     except Exception as e:
         logger.error(f"Chat error: {e}")
@@ -200,6 +156,7 @@ async def chat_endpoint(req: ChatRequest):
 async def chat_stream_endpoint(req: ChatRequest):
     """
     Streaming conversational AI — returns SSE tokens as they are generated.
+    Uses ModelRouter for task-specific model selection.
     """
     try:
         context = ""
@@ -210,9 +167,18 @@ async def chat_stream_endpoint(req: ChatRequest):
         if context and messages:
             messages[0]["content"] = f"{context}\n\nUser question: {messages[0]['content']}"
 
+        # Classify intent for task-specific model
+        user_query = req.messages[-1].content if req.messages else ""
+        intent = model_router.classify_intent(user_query)
+        task = model_router.task_for_intent(intent)
+
         def generate():
             try:
-                for token in llm_client.chat_stream(messages):
+                # Send metadata as first event
+                import json
+                meta = json.dumps({"intent": intent, "task_type": task.value})
+                yield f"data: [META]{meta}\n\n"
+                for token in model_router.stream(task, messages):
                     yield f"data: {token}\n\n"
                 yield "data: [DONE]\n\n"
             except Exception as e:
@@ -700,10 +666,10 @@ Use markdown formatting with headers, bullet points, and bold for key metrics.
 Be data-driven, strategic, and actionable.
 """
 
-        report_text = llm_client.chat(
+        report_text = model_router.generate(
+            TaskType.EXPLANATION,
             [{"role": "system", "content": "You are a chief strategy officer producing a company analysis report for the board. Be thorough, data-driven, and strategic."},
              {"role": "user", "content": prompt}],
-            temperature=0.3,
         )
 
         return {
@@ -851,9 +817,9 @@ Format the postmortem with these sections:
 
 Be direct, data-driven, and actionable.
 """
-        postmortem_text = llm_client.chat(
+        postmortem_text = model_router.generate(
+            TaskType.POSTMORTEM,
             [{"role": "user", "content": prompt}],
-            temperature=0.3,
         )
 
         return {
@@ -940,7 +906,7 @@ async def get_narrative(role: str):
             {"role": "user", "content": f"Here is the live organizational data:\n\n{combined_context}\n\nProvide your intelligence briefing now."},
         ]
 
-        narrative = llm_client.chat(messages)
+        narrative = model_router.generate(TaskType.SUMMARY, messages)
         return {"role": role, "narrative": narrative}
 
     except HTTPException:
@@ -948,6 +914,75 @@ async def get_narrative(role: str):
     except Exception as e:
         logger.error(f"Narrative error for {role}: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================================
+# Team Composition Simulator
+# ============================================================================
+
+class TeamSimulationRequest(BaseModel):
+    project_id: str
+    mutations: List[dict]  # [{"action": "add", "role": "Senior Engineer"}, ...]
+    baseline_risk: Optional[float] = None
+
+
+@app.post("/api/simulate-team")
+async def simulate_team_changes(req: TeamSimulationRequest):
+    """
+    Simulate the impact of team composition changes on project risk.
+    Accepts hypothetical mutations and returns Monte Carlo projections.
+    """
+    try:
+        mutations = []
+        for m in req.mutations:
+            role = m.get("role", "Mid Engineer")
+            if role not in ROLE_PROFILES:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Unknown role '{role}'. Available: {list(ROLE_PROFILES.keys())}",
+                )
+            mutations.append(TeamMutation(
+                action=m.get("action", "add"),
+                role=role,
+                project_id=req.project_id,
+                member_name=m.get("member_name"),
+                source_team=m.get("source_team"),
+            ))
+
+        # Get baseline risk from cache or let simulator estimate
+        baseline = req.baseline_risk
+        if baseline is None:
+            cached = _get_cached_risk(req.project_id)
+            if cached:
+                baseline = cached.risk_score
+
+        results = team_simulator.simulate_batch(mutations, baseline)
+
+        return {
+            "project_id": req.project_id,
+            "baseline_risk": baseline or results[0].baseline_risk if results else 0.3,
+            "simulations": [r.to_dict() for r in results],
+            "available_roles": list(ROLE_PROFILES.keys()),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Team simulation error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/simulate-team/roles")
+async def get_available_roles():
+    """Return available roles and their profiles for the simulator."""
+    return {
+        role: {
+            "velocity_boost": p["velocity_boost"],
+            "ramp_up_days": p["ramp_up_days"],
+            "cost_per_day": p["cost_per_day"],
+            "blocked_resolution": p["blocked_resolution"],
+        }
+        for role, p in ROLE_PROFILES.items()
+    }
 
 
 @app.get("/")
@@ -962,12 +997,14 @@ def health_check():
         "status": "ok",
         "system": "Decision Intelligence Platform",
         "tagline": "Graph → Agents → LLM → Human",
-        "agents": ["RiskAgent", "ConstraintAgent", "SimulationAgent"],
+        "agents": ["RiskAgent", "ConstraintAgent", "SimulationAgent", "TeamCompositionSimulator", "ModelRouter", "ContextAssembler"],
         "roles": list(ROLE_DEFINITIONS.keys()),
         "neo4j_status": "connected" if connected else "unavailable",
         "endpoints": {
             "crud": ["/api/teams", "/api/projects/{id}", "/api/tickets/{id}"],
             "ai": ["/api/analyze/{project_id}", "/api/chat", "/api/chat/stream", "/api/risk-snapshot/{project_id}", "/api/risk-history/{project_id}", "/api/postmortem/{project_id}", "/api/narrative/{role}"],
+            "simulator": ["/api/simulate-team", "/api/simulate-team/roles"],
+            "reports": ["/api/company-report", "/api/company-report/generate"],
             "roles": ["/api/roles", "/api/system-users", "/api/dashboard/{role}"],
         }
     }

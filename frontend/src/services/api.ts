@@ -250,4 +250,35 @@ export const api = {
       summary: any;
       generated_at: string;
     }>('/company-report/generate', { method: 'POST' }),
+
+  // Team Composition Simulator
+  getSimulatorRoles: () =>
+    apiFetch<Record<string, {
+      velocity_boost: number;
+      ramp_up_days: number;
+      cost_per_day: number;
+      blocked_resolution: number;
+    }>>('/simulate-team/roles'),
+
+  simulateTeam: (projectId: string, mutations: { action: string; role: string; member_name?: string }[], baselineRisk?: number) =>
+    apiFetch<{
+      project_id: string;
+      baseline_risk: number;
+      simulations: {
+        mutation: { action: string; role: string; project_id: string; member_name?: string };
+        baseline_risk: number;
+        projected_risk: number;
+        risk_delta: number;
+        cost_delta: number;
+        velocity_change: number;
+        confidence: number;
+        reasoning: string;
+        feasible: boolean;
+        warning: string | null;
+      }[];
+      available_roles: string[];
+    }>('/simulate-team', {
+      method: 'POST',
+      body: JSON.stringify({ project_id: projectId, mutations, baseline_risk: baselineRisk }),
+    }),
 };

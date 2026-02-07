@@ -20,6 +20,7 @@ import ReactMarkdown from 'react-markdown';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useTeams } from '@/context/TeamsContext';
+import { ModelBadge, IntentBadge } from '@/components/AITransparency';
 
 const CHAT_STORAGE_KEY = 'deliq_chat_history';
 const MAX_STORED_MESSAGES = 50;
@@ -29,6 +30,10 @@ const MAX_STORED_MESSAGES = 50;
 interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  meta?: {
+    intent?: string;
+    task_type?: string;
+  };
 }
 
 // ─── Streaming fetch helper ─────────────────────────────────────────────────
@@ -39,6 +44,7 @@ async function streamChat(
   onToken: (token: string) => void,
   onDone: () => void,
   onError: (err: string) => void,
+  onMeta?: (meta: { intent: string; task_type: string }) => void,
 ) {
   try {
     const res = await fetch('/api/chat/stream', {
@@ -73,6 +79,17 @@ async function streamChat(
         const payload = trimmed.slice(6);
         if (payload === '[DONE]') {
           onDone();
+          return;
+        }
+        if (payload.startsWith('[META]') && onMeta) {
+          try {
+            const metaData = JSON.parse(payload.slice(6));
+            onMeta(metaData);
+          } catch { /* ignore parse errors */ }
+          continue;
+        }
+        if (payload.startsWith('[ERROR]')) {
+          onError(payload.slice(8));
           return;
         }
         onToken(payload);
@@ -164,6 +181,16 @@ const ChatPage = () => {
           return next;
         });
         setStreaming(false);
+      },
+      (meta) => {
+        setMessages((prev) => {
+          const next = [...prev];
+          next[assistantIdx] = {
+            ...next[assistantIdx],
+            meta: { intent: meta.intent, task_type: meta.task_type },
+          };
+          return next;
+        });
       },
     );
   }, [input, streaming, messages, selectedProject]);
@@ -318,7 +345,7 @@ const ChatPage = () => {
             </Button>
           </div>
           <p className="mt-1.5 text-center text-[10px] text-muted-foreground/70">
-            Powered by Graph Agents • AI responses may contain inaccuracies
+            Multi-Model AI Router • Graph Agents • Intent Classification
           </p>
         </div>
       </div>
@@ -401,9 +428,17 @@ const MessageBubble = ({
           )}
         </div>
 
-        {/* Copy button for assistant messages */}
+        {/* Copy button + meta badges for assistant messages */}
         {!isUser && message.content && !isStreaming && (
-          <CopyButton text={message.content} />
+          <div className="flex items-center gap-2 flex-wrap">
+            <CopyButton text={message.content} />
+            {message.meta?.task_type && (
+              <ModelBadge taskType={message.meta.task_type} />
+            )}
+            {message.meta?.intent && (
+              <IntentBadge intent={message.meta.intent} />
+            )}
+          </div>
         )}
       </div>
 

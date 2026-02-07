@@ -13,6 +13,7 @@ import {
   GitGraph,
   MessageCircle,
   Cpu,
+  FlaskConical,
 } from 'lucide-react';
 import { useTeams } from '@/context/TeamsContext';
 import { cn } from '@/lib/utils';
@@ -55,6 +56,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
 
   const aiItems = [
     { icon: MessageCircle, label: 'AI Co-Pilot', path: '/chat', accent: true },
+    { icon: FlaskConical, label: 'Team Simulator', path: '/simulator' },
     { icon: GitGraph, label: 'Knowledge Graph', path: '/graph' },
   ];
 
