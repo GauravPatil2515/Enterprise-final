@@ -188,7 +188,7 @@ const GraphVisualization = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch("http://localhost:8000/graph/knowledge");
+      const res = await fetch("/api/graph/knowledge");
       if (!res.ok) throw new Error("Backend returned " + res.status);
       setRawData(await res.json());
     } catch (e: any) {

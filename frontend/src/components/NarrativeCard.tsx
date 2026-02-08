@@ -6,7 +6,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
-import { BrainCircuit, RefreshCw, Sparkles, Clock, ShieldCheck, Zap, FileText } from 'lucide-react';
+import { BrainCircuit, RefreshCw, Sparkles, Clock, ShieldCheck, Zap, FileText, AlertTriangle } from 'lucide-react';
 import { api } from '@/services/api';
 import { cn } from '@/lib/utils';
 
@@ -170,9 +170,14 @@ const NarrativeCard = ({ role, className }: Props) => {
           )}
 
           {error && !loading && (
-            <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <p className="text-sm text-red-400 py-2">{error}</p>
-              <button onClick={fetchNarrative} className="text-xs text-primary hover:underline">Try again</button>
+            <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col items-center py-4 gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-500/10">
+                <AlertTriangle className="h-5 w-5 text-red-400" />
+              </div>
+              <p className="text-sm text-red-400 text-center">{error}</p>
+              <button onClick={fetchNarrative} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+                <RefreshCw className="h-3.5 w-3.5" /> Try again
+              </button>
             </motion.div>
           )}
 
@@ -182,7 +187,7 @@ const NarrativeCard = ({ role, className }: Props) => {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="text-sm leading-relaxed text-foreground/90 prose prose-sm dark:prose-invert prose-p:my-1.5 prose-headings:my-3 prose-headings:text-foreground prose-ul:my-1 prose-li:my-0.5 prose-h2:text-base prose-h2:font-bold prose-strong:text-foreground max-w-none"
+              className="text-sm leading-relaxed text-foreground/90 prose prose-sm dark:prose-invert prose-p:my-1.5 prose-headings:my-3 prose-headings:text-foreground prose-ul:my-1 prose-li:my-0.5 prose-h2:text-base prose-h2:font-bold prose-strong:text-foreground max-w-none max-h-[500px] overflow-y-auto scrollbar-thin"
             >
               <ReactMarkdown>{narrative}</ReactMarkdown>
             </motion.div>

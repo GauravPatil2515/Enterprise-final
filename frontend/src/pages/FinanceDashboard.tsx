@@ -27,6 +27,7 @@ import {
   CheckCircle,
 } from 'lucide-react';
 import { api, type DashboardData } from '@/services/api';
+import { toast } from 'sonner';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import NarrativeCard from '@/components/NarrativeCard';
@@ -74,7 +75,7 @@ const FinanceDashboard = () => {
     api.getDashboardData('finance')
       .then(setData)
       .catch((err) => {
-        import('sonner').then(({ toast }) => toast.error(err?.message || 'Failed to load financial data'));
+        toast.error(err?.message || 'Failed to load financial data');
       })
       .finally(() => setLoading(false));
   }, []);
@@ -100,9 +101,9 @@ const FinanceDashboard = () => {
         totalRevenue,
         totalProfit
       );
-      import('sonner').then(({ toast }) => toast.success(`Financial summary downloaded: ${fileName}`));
+      toast.success(`Financial summary downloaded: ${fileName}`);
     } catch (err: any) {
-      import('sonner').then(({ toast }) => toast.error('Failed to generate PDF'));
+      toast.error('Failed to generate PDF');
     }
   };
 
@@ -141,7 +142,7 @@ const FinanceDashboard = () => {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-8">
+        <div className="grid gap-4 grid-cols-2 sm:grid-cols-4 xl:grid-cols-8">
           {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
             <div key={i} className="h-20 skeleton rounded-xl" />
           ))}
@@ -164,48 +165,54 @@ const FinanceDashboard = () => {
       className="space-y-6"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 p-2.5 text-white shadow">
-            <DollarSign className="h-5 w-5" />
+      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-8 py-6">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(245,158,11,0.12),transparent_60%)]" />
+        <div className="relative flex items-center justify-between flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 p-2.5 text-white shadow-lg">
+              <DollarSign className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <h1 className="text-xl font-bold text-white">Financial Intelligence</h1>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30">AI-POWERED</span>
+              </div>
+              <p className="text-sm text-slate-400">
+                Comprehensive ROI, revenue, and cost analysis across teams
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold">Financial Intelligence</h1>
-            <p className="text-sm text-muted-foreground">
-              Comprehensive ROI, revenue, and cost analysis
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* Download PDF Button */}
-          <button
-            onClick={handleDownloadPDF}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700 transition-all text-sm font-medium shadow-sm"
-          >
-            <Download className="h-4 w-4" />
-            Export Report
-          </button>
-          
-          {/* Tab Switcher */}
-          <div className="flex items-center gap-1 rounded-lg border bg-muted/50 p-1">
-          {(['overview', 'teams', 'projects'] as const).map((tab) => (
+          <div className="flex items-center gap-2">
+            {/* Download PDF Button */}
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={cn(
-                'px-3 py-1.5 text-xs font-medium rounded-md transition-all capitalize',
-                activeTab === tab ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-              )}
+              onClick={handleDownloadPDF}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700 transition-all text-sm font-medium shadow-sm"
             >
-              {tab}
+              <Download className="h-4 w-4" />
+              Export Report
             </button>
-          ))}
+            
+            {/* Tab Switcher */}
+            <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
+            {(['overview', 'teams', 'projects'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={cn(
+                  'px-3 py-1.5 text-xs font-medium rounded-md transition-all capitalize',
+                  activeTab === tab ? 'bg-white/10 text-white shadow-sm' : 'text-slate-400 hover:text-white',
+                )}
+              >
+                {tab}
+              </button>
+            ))}
+            </div>
           </div>
         </div>
       </motion.div>
 
       {/* Top Stats — always visible */}
-      <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+      <motion.div variants={itemVariants} className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
             {[
               { label: 'Teams', value: String(teams.length), icon: <Users className="h-3.5 w-3.5" />, color: 'bg-blue-500/10 text-blue-400' },
               { label: 'Members', value: String(totalMembers), icon: <Users className="h-3.5 w-3.5" />, color: 'bg-green-500/10 text-green-400' },
@@ -431,9 +438,9 @@ const FinanceDashboard = () => {
                             </td>
                             <td className="p-3 text-center">
                               {impact.ramp_up_required ? (
-                                <span className="text-amber-400 text-xs">⚠ Required</span>
+                                <span className="inline-flex items-center gap-1 text-amber-400 text-xs"><AlertTriangle className="h-3 w-3" /> Required</span>
                               ) : (
-                                <span className="text-green-400 text-xs">✓ None</span>
+                                <span className="inline-flex items-center gap-1 text-green-400 text-xs"><CheckCircle className="h-3 w-3" /> None</span>
                               )}
                             </td>
                             <td className="p-3 text-center">

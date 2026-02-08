@@ -20,6 +20,8 @@ import { useTeams } from '@/context/TeamsContext';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import ReactMarkdown from 'react-markdown';
+import { toast } from 'sonner';
 
 const RiskAnalysis = () => {
   const { teamId, projectId } = useParams<{ teamId: string; projectId: string }>();
@@ -140,7 +142,6 @@ const RiskAnalysis = () => {
       const snap = await api.saveRiskSnapshot(projectId);
       setHistory((prev) => [...prev, snap]);
     } catch (err: any) {
-      const { toast } = await import('sonner');
       toast.error(err?.message || 'Failed to save snapshot');
     }
     setSavingSnapshot(false);
@@ -154,7 +155,7 @@ const RiskAnalysis = () => {
       const result = await api.generatePostmortem(projectId);
       setPostmortem(result.postmortem);
     } catch {
-      setPostmortem('⚠️ Failed to generate postmortem. Please try again.');
+      setPostmortem('Failed to generate postmortem. Please try again.');
     }
     setGeneratingPM(false);
   };
@@ -469,7 +470,7 @@ const RiskAnalysis = () => {
                   </div>
                   <div>
                     <span className="text-muted-foreground">Feasible</span>
-                    <p className="font-semibold">{decision.feasible ? '✅ Yes' : '❌ No'}</p>
+                    <p className="font-semibold">{decision.feasible ? 'Yes' : 'No'}</p>
                   </div>
                 </div>
 
@@ -540,10 +541,8 @@ const RiskAnalysis = () => {
         </div>
 
         {postmortem ? (
-          <div className="prose prose-sm dark:prose-invert max-w-none rounded-lg bg-muted/30 p-4">
-            <pre className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90 font-sans">
-              {postmortem}
-            </pre>
+          <div className="prose prose-sm dark:prose-invert max-w-none rounded-lg bg-muted/30 p-4 max-h-[500px] overflow-y-auto scrollbar-thin">
+            <ReactMarkdown>{postmortem}</ReactMarkdown>
           </div>
         ) : (
           <p className="text-sm text-muted-foreground">

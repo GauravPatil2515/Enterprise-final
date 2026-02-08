@@ -13,7 +13,9 @@ import {
   ArrowRightLeft,
   ShieldAlert,
 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { api, type DashboardData } from '@/services/api';
+import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
@@ -42,7 +44,7 @@ const HRDashboard = () => {
     api.getDashboardData('hr')
       .then(setData)
       .catch((err) => {
-        import('sonner').then(({ toast }) => toast.error(err?.message || 'Failed to load HR data'));
+        toast.error(err?.message || 'Failed to load HR data');
       })
       .finally(() => setLoading(false));
   }, []);
@@ -90,28 +92,32 @@ const HRDashboard = () => {
       className="space-y-6"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-green-700 p-2.5 text-white shadow">
-            <Users className="h-5 w-5" />
+      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-8 py-6">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(34,197,94,0.12),transparent_60%)]" />
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-green-700 p-2.5 text-white shadow-lg">
+              <Users className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <h1 className="text-xl font-bold text-white">HR Dashboard</h1>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-400 ring-1 ring-green-500/30">AI-POWERED</span>
+              </div>
+              <p className="text-sm text-slate-400">Team workload, burnout risk, and member analytics</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold">HR Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Team workload, burnout risk & member overview</p>
+          <div className="hidden md:flex items-center gap-3">
+            <Button asChild size="sm" className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white border-0">
+              <Link to="/hiring-optimizer">
+                <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
+                Hiring Optimizer
+              </Link>
+            </Button>
           </div>
         </div>
-        <Button 
-          onClick={() => window.location.href = '/hiring-optimizer'}
-          className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
-        >
-          <TrendingUp className="h-4 w-4 mr-2" />
-          Hiring Optimizer
-        </Button>
       </motion.div>
 
-
-      {(
-        <>
           {/* Stats */}
           <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[
@@ -359,8 +365,6 @@ const HRDashboard = () => {
               ))}
             </div>
           </motion.div>
-        </>
-      )}
     </motion.div>
   );
 };

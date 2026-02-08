@@ -902,75 +902,75 @@ async def get_narrative(role: str):
         combined_context = "\n\n".join(context_parts)
 
         role_prompts = {
-            "engineer": """You are a senior engineering lead and technical strategist. Based on the live project data below, produce a comprehensive intelligence briefing in Markdown with these sections:
+            "engineer": """You are a senior engineering lead and technical strategist. Based on the live project data below, produce a comprehensive intelligence briefing in clean Markdown with these sections:
 
-## 🔥 Critical Priorities
+## Critical Priorities
 Top 2-3 things engineers must address TODAY (blockers, overdue, high-priority tickets).
 
-## 📊 Sprint Health
-Overall velocity assessment — what % is on track, what's slipping.
+## Sprint Health
+Overall velocity assessment — what percentage is on track, what is slipping.
 
-## ⚠️ Risk Flags
+## Risk Flags
 Any projects or tickets showing warning signs (blocked chains, unassigned work, deadline pressure).
 
-## 💡 Recommendations
+## Recommendations
 3 concrete, actionable next steps ranked by impact.
 
 Use bullet points, bold key metrics. Be direct and data-driven. Reference specific project names and ticket counts.""",
 
-            "hr": """You are an HR strategist and workforce analytics expert. Based on the live workforce data below, produce a comprehensive intelligence briefing in Markdown with these sections:
+            "hr": """You are an HR strategist and workforce analytics expert. Based on the live workforce data below, produce a comprehensive intelligence briefing in clean Markdown with these sections:
 
-## 👥 Workforce Overview
+## Workforce Overview
 Team size, distribution, and utilization summary.
 
-## 🔴 Burnout Risk
+## Burnout Risk
 Members with 3+ active tickets who may be overloaded. Suggest rebalancing.
 
-## 🟡 Underutilization
+## Underutilization
 Members with 0 tickets who could be reassigned.
 
-## 📋 Hiring Recommendations
+## Hiring Recommendations
 Based on workload patterns, suggest which roles to hire for.
 
-## 💡 Action Items
+## Action Items
 3 concrete steps to improve team health.
 
 Use bullet points, bold key metrics. Reference specific names and numbers.""",
 
-            "chairperson": """You are a Chief Delivery Officer reporting to the board. Based on the live project and workforce data below, produce a strategic intelligence briefing in Markdown with these sections:
+            "chairperson": """You are a Chief Delivery Officer reporting to the board. Based on the live project and workforce data below, produce a strategic intelligence briefing in clean Markdown with these sections:
 
-## 📈 Executive Summary
+## Executive Summary
 3-sentence overview of organizational delivery health.
 
-## 🔴 Top Risks
+## Top Risks
 Projects with the most blockers, lowest progress, or deadline pressure. Quantify impact.
 
-## 🟢 Wins & Momentum
-What's going well — completed tickets, on-track projects.
+## Wins and Momentum
+What is going well — completed tickets, on-track projects.
 
-## 👥 Resource Concerns
+## Resource Concerns
 Overloaded members, staffing gaps, cross-team dependencies.
 
-## 🎯 Strategic Recommendations
-5 ranked decisions you'd recommend to the board, with expected impact.
+## Strategic Recommendations
+5 ranked decisions you would recommend to the board, with expected impact.
 
-## 📅 90-Day Outlook
+## 90-Day Outlook
 2-3 sentences on trajectory if current trends continue.
 
 Be data-driven, cite specific numbers, project names, and team names.""",
 
-            "finance": """You are a CFO/Finance Director. Based on the resource and cost data below, produce a financial intelligence briefing in Markdown with these sections:
+            "finance": """You are a CFO and Finance Director. Based on the resource and cost data below, produce a financial intelligence briefing in clean Markdown with these sections:
 
-## 💰 Cost Overview
+## Cost Overview
 Total burn rate, cost per team, cost per project.
 
-## 📊 ROI Analysis
-Which teams/projects deliver the best return? Rank by efficiency.
+## ROI Analysis
+Which teams and projects deliver the best return? Rank by efficiency.
 
-## ⚠️ Financial Risks
+## Financial Risks
 Projects burning budget without proportional delivery. Quantify exposure.
 
-## 💡 Cost Optimization
+## Cost Optimization
 3 specific recommendations to reduce costs or improve ROI.
 
 Use dollar figures, percentages, and concrete metrics. Be analytical.""",

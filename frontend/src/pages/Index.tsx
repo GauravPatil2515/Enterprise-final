@@ -225,10 +225,6 @@ const LandingPage = () => {
   const { metrics } = useLiveMetrics();
   const [mobileNav, setMobileNav] = useState(false);
 
-  useEffect(() => {
-    if (currentRole) navigate('/role-dashboard', { replace: true });
-  }, [currentRole, navigate]);
-
   const handleRoleSelect = (role: RoleKey) => {
     const user = systemUsers.find((u) => u.role === role);
     selectRole(role, user || undefined);
@@ -769,7 +765,7 @@ const LandingPage = () => {
 
           <div className="flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-border gap-3">
             <p className="text-xs text-muted-foreground">
-              © 2026 DeliverIQ — Built for Datathon 2026 • Ybooks
+              © 2026 DeliverIQ. All rights reserved.
             </p>
             <div className="flex items-center gap-4">
               <a href="#" className="text-xs text-muted-foreground hover:text-foreground transition-colors">Privacy</a>

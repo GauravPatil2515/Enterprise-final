@@ -14,11 +14,27 @@ import {
   MessageCircle,
   Cpu,
   FlaskConical,
+  Link as LinkIcon,
+  BarChart,
+  Palette,
+  Globe,
+  Image,
+  Coins,
+  type LucideIcon,
 } from 'lucide-react';
 import { useTeams } from '@/context/TeamsContext';
 import { useRole } from '@/context/RoleContext';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
+
+const projectIconMap: Record<string, LucideIcon> = {
+  'Link': LinkIcon,
+  'BarChart': BarChart,
+  'Palette': Palette,
+  'Globe': Globe,
+  'Image': Image,
+  'Coins': Coins,
+};
 
 interface SidebarProps {
   isOpen: boolean;
@@ -60,6 +76,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     { icon: MessageCircle, label: 'AI Co-Pilot', path: '/chat', accent: true },
     { icon: FlaskConical, label: 'Team Simulator', path: '/simulator', restrictedFor: ['engineer'] },
     { icon: GitGraph, label: 'Knowledge Graph', path: '/graph', restrictedFor: ['engineer'] },
+    { icon: Cpu, label: 'Hiring Optimizer', path: '/hiring-optimizer', restrictedFor: ['engineer', 'finance', 'chairperson'] },
   ];
 
   // Filter AI items based on current role
@@ -214,7 +231,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                                     : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-foreground',
                                 )}
                               >
-                                <span className="text-sm">{project.icon}</span>
+                                {(() => { const Ic = projectIconMap[project.icon] || Globe; return <Ic className="h-3.5 w-3.5" />; })()}
                                 <span className="truncate text-xs">{project.name}</span>
                               </Link>
                               <Link

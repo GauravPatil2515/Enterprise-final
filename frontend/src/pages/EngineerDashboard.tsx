@@ -18,6 +18,7 @@ import { api, type DashboardData } from '@/services/api';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import NarrativeCard from '@/components/NarrativeCard';
+import { toast } from 'sonner';
 
 const statusColors: Record<string, string> = {
   'To Do': 'bg-slate-500',
@@ -40,7 +41,7 @@ const EngineerDashboard = () => {
     api.getDashboardData('engineer')
       .then(setData)
       .catch((err) => {
-        import('sonner').then(({ toast }) => toast.error(err?.message || 'Failed to load engineer data'));
+        toast.error(err?.message || 'Failed to load engineer data');
       })
       .finally(() => setLoading(false));
   }, []);
@@ -96,18 +97,40 @@ const EngineerDashboard = () => {
       className="space-y-6"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex items-center gap-3">
-        <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 p-2.5 text-white shadow">
-          <Code2 className="h-5 w-5" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold">Engineer Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Your projects and tickets at a glance</p>
+      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-8 py-6">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(59,130,246,0.12),transparent_60%)]" />
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 p-2.5 text-white shadow-lg">
+              <Code2 className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <h1 className="text-xl font-bold text-white">Engineer Dashboard</h1>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30">AI-POWERED</span>
+              </div>
+              <p className="text-sm text-slate-400">Your projects, tickets, and sprint performance at a glance</p>
+            </div>
+          </div>
+          <div className="hidden md:flex items-center gap-5">
+            <div className="text-center">
+              <p className="text-xl font-bold text-white">{activeTickets.length}</p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider">Active</p>
+            </div>
+            <div className="w-px h-8 bg-slate-700" />
+            <div className="text-center">
+              <p className="text-xl font-bold text-white">{myInProgress.length}</p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider">In Progress</p>
+            </div>
+            <div className="w-px h-8 bg-slate-700" />
+            <div className="text-center">
+              <p className="text-xl font-bold text-emerald-400">{tickets.length - activeTickets.length}</p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider">Completed</p>
+            </div>
+          </div>
         </div>
       </motion.div>
 
-      {(
-        <>
           {/* Stats */}
           <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
@@ -184,8 +207,6 @@ const EngineerDashboard = () => {
               ))}
             </div>
           </motion.div>
-        </>
-      )}
     </motion.div>
   );
 };

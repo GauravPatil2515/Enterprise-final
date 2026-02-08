@@ -27,6 +27,7 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import NarrativeCard from '@/components/NarrativeCard';
 import ReactMarkdown from 'react-markdown';
+import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 import { generateCompanyReportPDF } from '@/utils/pdfGenerator';
 import { generateProjectAnalysisPDF } from '@/utils/projectPdfGenerator';
@@ -62,7 +63,7 @@ const ChairpersonDashboard = () => {
         setFinanceData(finData);
       })
       .catch((err) => {
-        import('sonner').then(({ toast }) => toast.error(err?.message || 'Failed to load dashboard'));
+        toast.error(err?.message || 'Failed to load dashboard');
       })
       .finally(() => setLoading(false));
   }, []);
@@ -83,7 +84,7 @@ const ChairpersonDashboard = () => {
       const result = await api.analyzeProject(projectId);
       setAnalyses((prev) => ({ ...prev, [projectId]: { result, timestamp: Date.now() } }));
     } catch (err: any) {
-      import('sonner').then(({ toast }) => toast.error(err?.message || 'Risk analysis failed'));
+      toast.error(err?.message || 'Risk analysis failed');
     } finally {
       setAnalyzingId(null);
     }
@@ -113,9 +114,9 @@ const ChairpersonDashboard = () => {
       const result = await api.generateCompanyReport();
       setGeneratedReport(result.report);
       setReportTimestamp(result.generated_at);
-      import('sonner').then(({ toast }) => toast.success('Company report generated successfully'));
+      toast.success('Company report generated successfully');
     } catch (err: any) {
-      import('sonner').then(({ toast }) => toast.error(err?.message || 'Failed to generate company report'));
+      toast.error(err?.message || 'Failed to generate company report');
     } finally {
       setGeneratingReport(false);
     }
@@ -123,7 +124,7 @@ const ChairpersonDashboard = () => {
 
   const handleDownloadCompanyPDF = () => {
     if (!generatedReport || !companyReport?.summary || !reportTimestamp) {
-      import('sonner').then(({ toast }) => toast.error('Please generate a report first'));
+      toast.error('Please generate a report first');
       return;
     }
     
@@ -133,18 +134,18 @@ const ChairpersonDashboard = () => {
         companyReport.summary,
         reportTimestamp
       );
-      import('sonner').then(({ toast }) => toast.success(`PDF downloaded: ${fileName}`));
+      toast.success(`PDF downloaded: ${fileName}`);
     } catch (err: any) {
-      import('sonner').then(({ toast }) => toast.error('Failed to generate PDF'));
+      toast.error('Failed to generate PDF');
     }
   };
 
   const handleDownloadProjectAnalysisPDF = () => {
     try {
       const fileName = generateProjectAnalysisPDF(projects, projectFinancials);
-      import('sonner').then(({ toast }) => toast.success(`Project analysis PDF downloaded: ${fileName}`));
+      toast.success(`Project analysis PDF downloaded: ${fileName}`);
     } catch (err: any) {
-      import('sonner').then(({ toast }) => toast.error('Failed to generate project analysis PDF'));
+      toast.error('Failed to generate project analysis PDF');
     }
   };
 
@@ -184,20 +185,35 @@ const ChairpersonDashboard = () => {
       className="space-y-6"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 p-2.5 text-white shadow">
-            <ShieldCheck className="h-5 w-5" />
+      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-8 py-6">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(168,85,247,0.12),transparent_60%)]" />
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 p-2.5 text-white shadow-lg">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <h1 className="text-xl font-bold text-white">Executive Dashboard</h1>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/30">AI-POWERED</span>
+              </div>
+              <p className="text-sm text-slate-400">Strategic oversight, multi-agent risk analysis, and decision intelligence</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold">Executive Dashboard</h1>
-            <p className="text-sm text-muted-foreground">Strategic oversight and decision intelligence</p>
+          <div className="hidden md:flex items-center gap-5">
+            <div className="text-center">
+              <p className="text-xl font-bold text-white">{projects.length}</p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider">Projects</p>
+            </div>
+            <div className="w-px h-8 bg-slate-700" />
+            <div className="text-center">
+              <p className="text-xl font-bold text-amber-400">{blockedProjects.length}</p>
+              <p className="text-[10px] text-slate-500 uppercase tracking-wider">At Risk</p>
+            </div>
           </div>
         </div>
       </motion.div>
 
-      {(
-        <>
           {/* Stats */}
           <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
@@ -575,8 +591,6 @@ const ChairpersonDashboard = () => {
               })}
             </div>
           </motion.div>
-        </>
-      )}
     </motion.div>
   );
 };

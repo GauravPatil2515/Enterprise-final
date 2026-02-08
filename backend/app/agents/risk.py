@@ -134,6 +134,9 @@ class DeliveryRiskAgent:
                 except ValueError:
                     pass  # Skip malformed dates
 
+        # ── Compute real context for downstream agents ──
+        total_active = len([t for t in tickets if t.get("status") != "Done"])
+
         # Normalize: weight by ticket count so projects with many tickets
         # aren't equally penalized as tiny projects with few tickets
         if total_active > 0 and risk_score > 0:
@@ -145,8 +148,6 @@ class DeliveryRiskAgent:
         risk_score = min(risk_score, 1.0)
         risk_level = get_risk_level(risk_score)
 
-        # ── Compute real context for downstream agents ──
-        total_active = len([t for t in tickets if t.get("status") != "Done"])
         earliest_due = None
         for tk in tickets:
             if tk.get("status") != "Done" and tk.get("dueDate"):

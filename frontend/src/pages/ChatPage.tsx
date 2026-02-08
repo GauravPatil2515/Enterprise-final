@@ -177,7 +177,7 @@ const ChatPage = () => {
       (err) => {
         setMessages((prev) => {
           const next = [...prev];
-          next[assistantIdx] = { role: 'assistant', content: `⚠️ Error: ${err}` };
+          next[assistantIdx] = { role: 'assistant', content: `Error: ${err}` };
           return next;
         });
         setStreaming(false);

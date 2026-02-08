@@ -29,7 +29,6 @@ interface DeveloperMetrics {
   tasksCompleted: number;
   avgTaskTime: number; // hours
   codeQuality: number; // 0-100
-  githubContributions?: number;
   salary: number;
 }
 
@@ -80,7 +79,6 @@ const HiringOptimizer = () => {
               tasksCompleted,
               avgTaskTime,
               codeQuality: Math.round((member.performance || 3.5) * 20), // Convert 5-scale to 100-scale
-              githubContributions: Math.floor(Math.random() * 500) + 100, // Mock data
               salary: member.role.toLowerCase().includes('senior') ? 100000 : 60000,
             });
           });
@@ -210,22 +208,28 @@ const HiringOptimizer = () => {
       className="container mx-auto p-6 space-y-6"
     >
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="relative flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg">
-            <Calculator className="h-6 w-6 text-white" />
+      <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-8 py-6">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(168,85,247,0.12),transparent_60%)]" />
+        <div className="relative flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 p-2.5 text-white shadow-lg">
+              <Calculator className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-0.5">
+                <h1 className="text-xl font-bold text-white">Hiring Optimizer</h1>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/30">AI-POWERED</span>
+              </div>
+              <p className="text-sm text-slate-400">
+                Decision support for strategic hiring across teams
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-3xl font-bold">Hiring Optimizer</h1>
-            <p className="text-sm text-muted-foreground">
-              AI-powered decision support for strategic hiring
-            </p>
-          </div>
+          <Badge variant="outline" className="text-xs border-white/10 text-slate-300">
+            <Zap className="h-3 w-3 mr-1" />
+            HR Analytics
+          </Badge>
         </div>
-        <Badge variant="outline" className="text-xs">
-          <Zap className="h-3 w-3 mr-1" />
-          HR Analytics
-        </Badge>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
