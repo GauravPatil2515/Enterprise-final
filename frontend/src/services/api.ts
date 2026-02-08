@@ -37,6 +37,8 @@ export interface Member {
   avatar: string;
   role: string;
   email: string;
+  performance?: number;
+  tickets?: Ticket[];
 }
 
 export interface Ticket {
@@ -51,6 +53,8 @@ export interface Ticket {
   attachments: number;
   comments: number;
   labels: string[];
+  estimatedHours?: number;
+  project_id?: string;
 }
 
 export interface Project {

@@ -16,6 +16,7 @@ import {
   FlaskConical,
 } from 'lucide-react';
 import { useTeams } from '@/context/TeamsContext';
+import { useRole } from '@/context/RoleContext';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 
@@ -27,6 +28,7 @@ interface SidebarProps {
 export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const location = useLocation();
   const { state, dispatch } = useTeams();
+  const { currentRole } = useRole();
   const [expandedTeams, setExpandedTeams] = useState<string[]>([state.teams[0]?.id || '']);
 
   const toggleTeam = (teamId: string) => {
@@ -54,11 +56,17 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     { icon: FolderKanban, label: 'All Projects', path: '/projects' },
   ];
 
-  const aiItems = [
+  const allAiItems = [
     { icon: MessageCircle, label: 'AI Co-Pilot', path: '/chat', accent: true },
-    { icon: FlaskConical, label: 'Team Simulator', path: '/simulator' },
-    { icon: GitGraph, label: 'Knowledge Graph', path: '/graph' },
+    { icon: FlaskConical, label: 'Team Simulator', path: '/simulator', restrictedFor: ['engineer'] },
+    { icon: GitGraph, label: 'Knowledge Graph', path: '/graph', restrictedFor: ['engineer'] },
   ];
+
+  // Filter AI items based on current role
+  const aiItems = allAiItems.filter(item => {
+    if (!item.restrictedFor) return true;
+    return !item.restrictedFor.includes(currentRole || '');
+  });
 
   const sidebarContent = (
     <div className="flex h-full flex-col bg-sidebar">

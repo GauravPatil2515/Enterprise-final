@@ -90,15 +90,25 @@ const HRDashboard = () => {
       className="space-y-6"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex items-center gap-3">
-        <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-green-700 p-2.5 text-white shadow">
-          <Users className="h-5 w-5" />
+      <motion.div variants={itemVariants} className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-green-700 p-2.5 text-white shadow">
+            <Users className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">HR Dashboard</h1>
+            <p className="text-sm text-muted-foreground">Team workload, burnout risk & member overview</p>
+          </div>
         </div>
-        <div>
-          <h1 className="text-2xl font-bold">HR Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Team workload, burnout risk & member overview</p>
-        </div>
+        <Button 
+          onClick={() => window.location.href = '/hiring-optimizer'}
+          className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700"
+        >
+          <TrendingUp className="h-4 w-4 mr-2" />
+          Hiring Optimizer
+        </Button>
       </motion.div>
+
 
       {(
         <>

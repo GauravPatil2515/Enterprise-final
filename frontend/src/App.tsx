@@ -16,6 +16,7 @@ import RoleDashboard from "./pages/RoleDashboard";
 import GraphVisualization from "./pages/GraphVisualization";
 import ChatPage from './pages/ChatPage';
 import TeamSimulator from './pages/TeamSimulator';
+import HiringOptimizer from './pages/HiringOptimizer';
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -46,6 +47,7 @@ const App = () => (
                 <Route path="/graph" element={<GraphVisualization />} />
                 <Route path="/chat" element={<ChatPage />} />
                 <Route path="/simulator" element={<TeamSimulator />} />
+                <Route path="/hiring-optimizer" element={<HiringOptimizer />} />
               </Route>
 
               <Route path="*" element={<NotFound />} />

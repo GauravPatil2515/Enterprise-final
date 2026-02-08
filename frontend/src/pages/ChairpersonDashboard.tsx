@@ -1,5 +1,6 @@
 /**
- * ChairpersonDashboard — Risk overview, AI agent opinions, and decision authority.
+ * ChairpersonDashboard — Enhanced Risk overview, AI agent opinions, and decision authority.
+ * Improved UI with professional project cards and PDF export functionality.
  */
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
@@ -15,6 +16,11 @@ import {
   Loader2,
   Clock,
   Download,
+  DollarSign,
+  BarChart3,
+  CheckCircle,
+  Zap,
+  FileText,
 } from 'lucide-react';
 import { api, type DashboardData, type AnalysisResult } from '@/services/api';
 import { Progress } from '@/components/ui/progress';
@@ -23,6 +29,7 @@ import NarrativeCard from '@/components/NarrativeCard';
 import ReactMarkdown from 'react-markdown';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
 import { generateCompanyReportPDF } from '@/utils/pdfGenerator';
+import { generateProjectAnalysisPDF } from '@/utils/projectPdfGenerator';
 
 const riskColors: Record<string, string> = {
   HIGH: 'text-red-400 bg-red-500/20',
@@ -114,7 +121,7 @@ const ChairpersonDashboard = () => {
     }
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadCompanyPDF = () => {
     if (!generatedReport || !companyReport?.summary || !reportTimestamp) {
       import('sonner').then(({ toast }) => toast.error('Please generate a report first'));
       return;
@@ -129,6 +136,15 @@ const ChairpersonDashboard = () => {
       import('sonner').then(({ toast }) => toast.success(`PDF downloaded: ${fileName}`));
     } catch (err: any) {
       import('sonner').then(({ toast }) => toast.error('Failed to generate PDF'));
+    }
+  };
+
+  const handleDownloadProjectAnalysisPDF = () => {
+    try {
+      const fileName = generateProjectAnalysisPDF(projects, projectFinancials);
+      import('sonner').then(({ toast }) => toast.success(`Project analysis PDF downloaded: ${fileName}`));
+    } catch (err: any) {
+      import('sonner').then(({ toast }) => toast.error('Failed to generate project analysis PDF'));
     }
   };
 
@@ -168,13 +184,15 @@ const ChairpersonDashboard = () => {
       className="space-y-6"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="flex items-center gap-3">
-        <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 p-2.5 text-white shadow">
-          <ShieldCheck className="h-5 w-5" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold">Chairperson Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Risk overview • Agent opinions • Decision authority</p>
+      <motion.div variants={itemVariants} className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 p-2.5 text-white shadow">
+            <ShieldCheck className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold">Executive Dashboard</h1>
+            <p className="text-sm text-muted-foreground">Strategic oversight and decision intelligence</p>
+          </div>
         </div>
       </motion.div>
 
@@ -216,19 +234,19 @@ const ChairpersonDashboard = () => {
                 <button
                   onClick={handleGenerateCompanyReport}
                   disabled={generatingReport}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-purple-700 text-white hover:from-purple-600 hover:to-purple-800 transition-all disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-purple-700 text-white hover:from-purple-600 hover:to-purple-800 transition-all disabled:opacity-50 text-sm font-medium"
                 >
                   {generatingReport ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> Generating...</>
                   ) : (
-                    <>🤖 Generate Full Report</>
+                    <><Zap className="h-4 w-4" /> Generate Full Report</>
                   )}
                 </button>
                 
                 {generatedReport && (
                   <button
-                    onClick={handleDownloadPDF}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-primary text-primary hover:bg-primary/10 transition-all"
+                    onClick={handleDownloadCompanyPDF}
+                    className="flex items-center gap-2 px-4 py-2 rounded-lg border border-primary text-primary hover:bg-primary/10 transition-all text-sm font-medium"
                   >
                     <Download className="h-4 w-4" />
                     Download PDF
@@ -334,105 +352,142 @@ const ChairpersonDashboard = () => {
 
           {/* Projects with Risk */}
           <motion.div variants={itemVariants}>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-semibold">All Projects — Risk Status</h2>
-              <button
-                onClick={handleAnalyzeAll}
-                disabled={analyzingAll || !!analyzingId}
-                className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
-              >
-                {analyzingAll ? (
-                  <><Loader2 className="h-4 w-4 animate-spin" /> Analyzing All...</>
-                ) : (
-                  <>🤖 Analyze All Projects</>
-                )}
-              </button>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold">All Projects — Risk & Financial Analysis</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleDownloadProjectAnalysisPDF}
+                  className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700 transition-all font-medium"
+                >
+                  <FileText className="h-4 w-4" />
+                  Download Project Analysis
+                </button>
+                <button
+                  onClick={handleAnalyzeAll}
+                  disabled={analyzingAll || !!analyzingId}
+                  className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50 font-medium"
+                >
+                  {analyzingAll ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Analyzing All...</>
+                  ) : (
+                    <><Zap className="h-4 w-4" /> Analyze All Projects</>
+                  )}
+                </button>
+              </div>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               {projects.map((proj: any) => {
                 const analysisEntry = analyses[proj.id];
                 const analysis = analysisEntry?.result;
                 const analysisTime = analysisEntry?.timestamp;
                 const isAnalyzing = analyzingId === proj.id;
+                const financials = projectFinancials[proj.id];
 
                 return (
-                  <div key={proj.id} className="rounded-xl border bg-card p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 flex-wrap mb-1">
-                          <h3 className="font-semibold">{proj.name}</h3>
-                          <span className="text-xs text-muted-foreground">({proj.team})</span>
-                          <span
-                            className={cn(
-                              'text-xs px-2 py-0.5 rounded font-medium',
-                              proj.status === 'Ongoing'
-                                ? 'bg-blue-500/20 text-blue-400'
-                                : proj.status === 'Completed'
-                                ? 'bg-green-500/20 text-green-400'
-                                : 'bg-amber-500/20 text-amber-400',
-                            )}
-                          >
-                            {proj.status}
-                          </span>
-                          
-                          {/* Financial Metrics */}
-                          {projectFinancials[proj.id] && (
-                            <>
-                              <span className="text-xs px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 font-medium">
-                                💰 CTC: ${(projectFinancials[proj.id].cost_to_company / 1000).toFixed(0)}K
-                              </span>
-                              <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-medium">
-                                📈 Rev: ${(projectFinancials[proj.id].revenue / 1000).toFixed(0)}K
-                              </span>
-                              <span
-                                className={cn(
-                                  'text-xs px-2 py-0.5 rounded font-bold',
-                                  projectFinancials[proj.id].roi >= 0
-                                    ? 'bg-green-500/20 text-green-400'
-                                    : 'bg-red-500/20 text-red-400'
-                                )}
-                              >
-                                ROI: {projectFinancials[proj.id].roi}%
-                              </span>
-                            </>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                          <span>{proj.active_tickets} active tickets</span>
-                          {proj.blocked_count > 0 && (
-                            <span className="text-red-400 font-medium">🔴 {proj.blocked_count} blocked</span>
-                          )}
-                          <Progress value={proj.progress} className="h-1 w-24" />
-                          <span>{proj.progress}%</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        {analysis && (
-                          <div className="flex items-center gap-2">
+                  <div key={proj.id} className="rounded-xl border bg-card hover:shadow-lg transition-all">
+                    {/* Project Header */}
+                    <div className="p-5 border-b bg-muted/30">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 flex-wrap mb-2">
+                            <h3 className="text-lg font-bold">{proj.name}</h3>
+                            <span className="text-xs text-muted-foreground px-2 py-1 rounded bg-muted">
+                              {proj.team}
+                            </span>
                             <span
                               className={cn(
-                                'text-xs font-bold px-2 py-1 rounded',
-                                riskColors[analysis.risk_level] || '',
+                                'text-xs px-2.5 py-1 rounded font-medium',
+                                proj.status === 'Ongoing'
+                                  ? 'bg-blue-500/20 text-blue-400'
+                                  : proj.status === 'Completed'
+                                  ? 'bg-green-500/20 text-green-400'
+                                  : 'bg-amber-500/20 text-amber-400',
                               )}
                             >
-                              {analysis.risk_level} ({Math.round(analysis.risk_score * 100)}%)
+                              {proj.status}
                             </span>
-                            {analysisTime && (
-                              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                <Clock className="h-3 w-3" />
-                                {new Date(analysisTime).toLocaleTimeString()}
-                              </span>
+                          </div>
+
+                          {/* Progress Bar */}
+                          <div className="flex items-center gap-3 mb-3">
+                            <Progress value={proj.progress} className="h-2 flex-1" />
+                            <span className="text-sm font-medium min-w-[3rem] text-right">{proj.progress}%</span>
+                          </div>
+
+                          {/* Metrics Grid */}
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            <div className="flex items-center gap-2 text-sm">
+                              <Activity className="h-4 w-4 text-blue-400" />
+                              <span className="text-muted-foreground">Active:</span>
+                              <span className="font-medium">{proj.active_tickets}</span>
+                            </div>
+                            {proj.blocked_count > 0 && (
+                              <div className="flex items-center gap-2 text-sm">
+                                <AlertTriangle className="h-4 w-4 text-red-400" />
+                                <span className="text-muted-foreground">Blocked:</span>
+                                <span className="font-bold text-red-400">{proj.blocked_count}</span>
+                              </div>
+                            )}
+                            {financials && (
+                              <>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <DollarSign className="h-4 w-4 text-amber-400" />
+                                  <span className="text-muted-foreground">Cost:</span>
+                                  <span className="font-medium text-amber-400">${(financials.cost_to_company / 1000).toFixed(0)}K</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <TrendingUp className="h-4 w-4 text-emerald-400" />
+                                  <span className="text-muted-foreground">Revenue:</span>
+                                  <span className="font-medium text-emerald-400">${(financials.revenue / 1000).toFixed(0)}K</span>
+                                </div>
+                                <div className="flex items-center gap-2 text-sm">
+                                  <BarChart3 className="h-4 w-4" />
+                                  <span className="text-muted-foreground">ROI:</span>
+                                  <span
+                                    className={cn(
+                                      'font-bold',
+                                      financials.roi >= 0 ? 'text-green-400' : 'text-red-400'
+                                    )}
+                                  >
+                                    {financials.roi}%
+                                  </span>
+                                </div>
+                              </>
                             )}
                           </div>
-                        )}
-                        <button
-                          onClick={() => handleAnalyze(proj.id)}
-                          disabled={isAnalyzing}
-                          className="text-xs px-3 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50"
-                        >
-                          {isAnalyzing ? 'Analyzing...' : analysis ? 'Re-analyze' : '🤖 Analyze Risk'}
-                        </button>
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          {analysis && (
+                            <div className="flex flex-col items-end gap-1">
+                              <span
+                                className={cn(
+                                  'text-xs font-bold px-3 py-1.5 rounded',
+                                  riskColors[analysis.risk_level] || '',
+                                )}
+                              >
+                                {analysis.risk_level} ({Math.round(analysis.risk_score * 100)}%)
+                              </span>
+                              {analysisTime && (
+                                <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {new Date(analysisTime).toLocaleTimeString()}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          <button
+                            onClick={() => handleAnalyze(proj.id)}
+                            disabled={isAnalyzing}
+                            className="flex items-center gap-2 text-xs px-4 py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors disabled:opacity-50 font-medium"
+                          >
+                            {isAnalyzing ? (
+                              <><Loader2 className="h-3 w-3 animate-spin" /> Analyzing...</>
+                            ) : (
+                              <><Zap className="h-3 w-3" /> {analysis ? 'Re-analyze' : 'Analyze Risk'}</>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -441,22 +496,22 @@ const ChairpersonDashboard = () => {
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
-                        className="mt-4 pt-4 border-t space-y-3"
+                        className="p-5 space-y-4"
                       >
-                        <p className="text-sm">{analysis.primary_reason}</p>
+                        <p className="text-sm leading-relaxed">{analysis.primary_reason}</p>
 
                         {/* Agent Opinions */}
                         {analysis.agent_opinions.length > 0 && (
                           <div>
-                            <p className="text-xs font-semibold text-muted-foreground mb-2">Agent Opinions</p>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                            <p className="text-xs font-semibold text-muted-foreground mb-3">Agent Opinions</p>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                               {analysis.agent_opinions.map((op) => (
-                                <div key={op.agent} className="rounded-lg border p-2.5 text-xs">
-                                  <div className="flex items-center justify-between mb-1">
+                                <div key={op.agent} className="rounded-lg border bg-muted/30 p-3 text-xs">
+                                  <div className="flex items-center justify-between mb-2">
                                     <span className="font-semibold">{op.agent}</span>
                                     <span className="text-muted-foreground">{Math.round(op.confidence * 100)}%</span>
                                   </div>
-                                  <p className="text-muted-foreground">{op.claim}</p>
+                                  <p className="text-muted-foreground leading-relaxed">{op.claim}</p>
                                 </div>
                               ))}
                             </div>
@@ -466,35 +521,39 @@ const ChairpersonDashboard = () => {
                         {/* Decision Matrix */}
                         {analysis.decision_comparison.length > 0 && (
                           <div>
-                            <p className="text-xs font-semibold text-muted-foreground mb-2">Decision Matrix</p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                            <p className="text-xs font-semibold text-muted-foreground mb-3">Decision Matrix</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               {analysis.decision_comparison.map((dc) => (
                                 <div
                                   key={dc.action}
                                   className={cn(
-                                    'rounded-lg border p-2.5 text-xs',
+                                    'rounded-lg border p-3 text-xs',
                                     dc.recommended
                                       ? 'border-green-500/50 bg-green-500/5'
                                       : !dc.feasible
                                         ? 'border-red-500/30 bg-red-500/5'
-                                        : '',
+                                        : 'bg-muted/30',
                                   )}
                                 >
-                                  <div className="flex items-center justify-between mb-1">
+                                  <div className="flex items-center justify-between mb-2">
                                     <span className="font-semibold">{dc.action}</span>
                                     {dc.recommended ? (
-                                      <span className="text-green-400 text-[10px] font-bold">✓ RECOMMENDED</span>
+                                      <span className="flex items-center gap-1 text-green-400 text-[10px] font-bold">
+                                        <CheckCircle className="h-3 w-3" /> RECOMMENDED
+                                      </span>
                                     ) : !dc.feasible ? (
-                                      <span className="text-red-400 text-[10px] font-bold flex items-center gap-0.5">
+                                      <span className="flex items-center gap-1 text-red-400 text-[10px] font-bold">
                                         <XCircle className="h-3 w-3" /> NOT RECOMMENDED
                                       </span>
                                     ) : null}
                                   </div>
-                                  <p className="text-muted-foreground">{dc.reason}</p>
-                                  <div className="flex items-center gap-3 mt-1">
-                                    <span>Risk ↓ {Math.round(dc.risk_reduction * 100)}%</span>
-                                    <span>Cost: {dc.cost}</span>
-                                    <span>{dc.feasible ? '✅ Feasible' : '❌ Not Feasible'}</span>
+                                  <p className="text-muted-foreground mb-2 leading-relaxed">{dc.reason}</p>
+                                  <div className="flex items-center gap-3 text-[11px]">
+                                    <span className="text-green-400">Risk ↓ {Math.round(dc.risk_reduction * 100)}%</span>
+                                    <span className="text-amber-400">Cost: {dc.cost}</span>
+                                    <span className={dc.feasible ? 'text-green-400' : 'text-red-400'}>
+                                      {dc.feasible ? 'Feasible' : 'Not Feasible'}
+                                    </span>
                                   </div>
                                 </div>
                               ))}
@@ -505,7 +564,7 @@ const ChairpersonDashboard = () => {
                         {/* Link to full analysis */}
                         <Link
                           to={`/project/${proj.team_id || 't1'}/${proj.id}/risk`}
-                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline font-medium"
                         >
                           View full analysis <ArrowUpRight className="h-3 w-3" />
                         </Link>
