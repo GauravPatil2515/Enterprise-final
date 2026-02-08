@@ -304,6 +304,10 @@ const ChatPage = () => {
             {messages.map((msg, i) => (
               <MessageBubble key={i} message={msg} isStreaming={streaming && i === messages.length - 1} />
             ))}
+            {/* Follow-up suggestions after last assistant response */}
+            {!streaming && messages.length > 0 && messages[messages.length - 1].role === 'assistant' && messages[messages.length - 1].content && (
+              <FollowUpSuggestions onSuggestion={(q) => { setInput(q); setTimeout(() => inputRef.current?.focus(), 50); }} />
+            )}
           </div>
         )}
       </div>
@@ -451,31 +455,89 @@ const MessageBubble = ({
   );
 };
 
+const FollowUpSuggestions = ({ onSuggestion }: { onSuggestion: (q: string) => void }) => {
+  const followUps = [
+    'How can we mitigate these risks?',
+    'Break this down into action items',
+    'Who should own this work?',
+    'Compare with last sprint's metrics',
+    'What's the hiring impact here?',
+    'Generate a stakeholder summary',
+  ];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.3, duration: 0.3 }}
+      className="mx-auto max-w-2xl px-4 pb-2"
+    >
+      <p className="text-[10px] font-medium text-muted-foreground mb-1.5 ml-10">Suggested follow-ups</p>
+      <div className="flex flex-wrap gap-1.5 ml-10">
+        {followUps.map((q) => (
+          <button
+            key={q}
+            onClick={() => onSuggestion(q)}
+            className="inline-flex items-center gap-1 rounded-full border border-border/50 bg-card/60 px-3 py-1.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-card hover:border-primary/30 transition-all"
+          >
+            <Sparkles className="h-2.5 w-2.5" />
+            {q}
+          </button>
+        ))}
+      </div>
+    </motion.div>
+  );
+};
+
 const EmptyState = ({ onSuggestion }: { onSuggestion: (q: string) => void }) => {
   const suggestions = [
     {
       icon: <Shield className="h-4 w-4" />,
       label: 'Risk Analysis',
-      query: 'What are the top risks across all projects?',
+      query: 'What are the top risks across all projects? Include severity levels and mitigation strategies.',
       color: 'from-red-500/10 to-orange-500/10 text-red-400',
     },
     {
       icon: <Zap className="h-4 w-4" />,
-      label: 'Blockers',
-      query: 'Which tickets are currently blocking delivery?',
+      label: 'Blockers & Dependencies',
+      query: 'Which tickets are currently blocked or blocking others? Show dependency chains.',
       color: 'from-amber-500/10 to-yellow-500/10 text-amber-400',
     },
     {
       icon: <Users className="h-4 w-4" />,
-      label: 'Team Health',
-      query: 'Summarize the health of all teams',
+      label: 'Team Health & Velocity',
+      query: 'Analyze team health metrics: velocity, workload balance, and burnout risk across all teams.',
       color: 'from-emerald-500/10 to-green-500/10 text-emerald-400',
     },
     {
       icon: <BrainCircuit className="h-4 w-4" />,
       label: 'Sprint Planning',
-      query: 'What should we prioritize this sprint?',
+      query: 'What should we prioritize this sprint? Consider deadlines, dependencies, and team capacity.',
       color: 'from-violet-500/10 to-indigo-500/10 text-violet-400',
+    },
+    {
+      icon: <FolderKanban className="h-4 w-4" />,
+      label: 'Resource Allocation',
+      query: 'Analyze resource allocation. Which engineers are over-committed and who has bandwidth?',
+      color: 'from-cyan-500/10 to-blue-500/10 text-cyan-400',
+    },
+    {
+      icon: <Bot className="h-4 w-4" />,
+      label: 'Cost vs Progress',
+      query: 'Compare project cost burn rate against completion percentage. Flag projects with poor ROI.',
+      color: 'from-pink-500/10 to-rose-500/10 text-pink-400',
+    },
+    {
+      icon: <Sparkles className="h-4 w-4" />,
+      label: 'Hiring Recommendation',
+      query: 'Based on current workload, what roles should we hire for next? Rank by urgency.',
+      color: 'from-orange-500/10 to-amber-500/10 text-orange-400',
+    },
+    {
+      icon: <Shield className="h-4 w-4" />,
+      label: 'Executive Summary',
+      query: 'Generate an executive summary for the chairperson covering all teams, budgets, risks, and milestones.',
+      color: 'from-indigo-500/10 to-purple-500/10 text-indigo-400',
     },
   ];
 
@@ -485,11 +547,11 @@ const EmptyState = ({ onSuggestion }: { onSuggestion: (q: string) => void }) => 
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.4 }}
-        className="text-center max-w-lg"
+        className="text-center max-w-2xl"
       >
         {/* Animated logo */}
         <div className="relative mx-auto mb-6 h-20 w-20">
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-500/20 blur-xl" />
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-500/20 blur-xl animate-pulse" />
           <div className="relative flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg">
             <BrainCircuit className="h-10 w-10 text-white" />
           </div>
@@ -498,17 +560,27 @@ const EmptyState = ({ onSuggestion }: { onSuggestion: (q: string) => void }) => 
         <h2 className="text-2xl font-bold bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
           AI Co-Pilot
         </h2>
-        <p className="mt-2 text-sm text-muted-foreground max-w-sm mx-auto">
-          Graph-powered intelligence for your projects. Ask about risks, team health, blockers, and strategic decisions.
+        <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+          Powered by a multi-agent AI pipeline with graph-backed analysis.
+          Ask complex questions about risks, team dynamics, budgets, hiring, or strategic decisions.
         </p>
 
+        {/* Capability pills */}
+        <div className="flex flex-wrap justify-center gap-1.5 mt-4 mb-6">
+          {['Risk Analysis', 'Team Simulation', 'Budget Tracking', 'Dependency Mapping', 'Hiring Strategy', 'Sprint Analytics'].map(cap => (
+            <span key={cap} className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-muted/30 px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
+              <Zap className="h-2.5 w-2.5 text-violet-400" />{cap}
+            </span>
+          ))}
+        </div>
+
         {/* Suggestion cards */}
-        <div className="mt-8 grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {suggestions.map((s) => (
             <button
               key={s.label}
               onClick={() => onSuggestion(s.query)}
-              className="group relative rounded-xl border border-border/50 bg-card/50 p-3.5 text-left transition-all hover:border-primary/30 hover:bg-card hover:shadow-md"
+              className="group relative rounded-xl border border-border/50 bg-card/50 p-3 text-left transition-all hover:border-primary/30 hover:bg-card hover:shadow-md"
             >
               <div className={cn(
                 'inline-flex items-center justify-center rounded-lg bg-gradient-to-br p-2 mb-2',
@@ -517,7 +589,7 @@ const EmptyState = ({ onSuggestion }: { onSuggestion: (q: string) => void }) => 
                 {s.icon}
               </div>
               <p className="text-xs font-medium">{s.label}</p>
-              <p className="text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{s.query}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{s.query}</p>
             </button>
           ))}
         </div>

@@ -1,12 +1,12 @@
 /**
  * NarrativeCard — AI-generated executive briefing for role dashboards.
- * Fetches /api/narrative/{role} and displays it with a loading state,
- * freshness timestamp, and confidence indicator.
+ * Shows a "Generate Briefing" button on first load, then displays the
+ * full Markdown briefing with confidence and freshness indicators.
  */
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
-import { BrainCircuit, RefreshCw, Sparkles, Clock, ShieldCheck } from 'lucide-react';
+import { BrainCircuit, RefreshCw, Sparkles, Clock, ShieldCheck, Zap, FileText } from 'lucide-react';
 import { api } from '@/services/api';
 import { cn } from '@/lib/utils';
 
@@ -26,10 +26,11 @@ function timeSince(date: Date): string {
 
 const NarrativeCard = ({ role, className }: Props) => {
   const [narrative, setNarrative] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [generatedAt, setGeneratedAt] = useState<Date | null>(null);
-  const [, setTick] = useState(0); // force re-render for "time ago"
+  const [hasGenerated, setHasGenerated] = useState(false);
+  const [, setTick] = useState(0);
 
   const fetchNarrative = async () => {
     setLoading(true);
@@ -38,6 +39,7 @@ const NarrativeCard = ({ role, className }: Props) => {
       const res = await api.getNarrative(role);
       setNarrative(res.narrative);
       setGeneratedAt(new Date());
+      setHasGenerated(true);
     } catch (err: any) {
       setError(err?.message || 'Failed to generate narrative');
     } finally {
@@ -45,18 +47,13 @@ const NarrativeCard = ({ role, className }: Props) => {
     }
   };
 
-  useEffect(() => {
-    fetchNarrative();
-  }, [role]);
-
   // Refresh the "time ago" label every 30s
   useEffect(() => {
     const interval = setInterval(() => setTick((t) => t + 1), 30000);
     return () => clearInterval(interval);
   }, []);
 
-  // Confidence: "High" if narrative is long (> 200 chars), "Medium" otherwise
-  const confidence = narrative.length > 200 ? 'High' : narrative.length > 80 ? 'Medium' : 'Low';
+  const confidence = narrative.length > 400 ? 'High' : narrative.length > 150 ? 'Medium' : 'Low';
   const confColor = confidence === 'High' ? 'text-emerald-400 bg-emerald-500/15' : confidence === 'Medium' ? 'text-amber-400 bg-amber-500/15' : 'text-red-400 bg-red-500/15';
 
   return (
@@ -64,65 +61,134 @@ const NarrativeCard = ({ role, className }: Props) => {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'rounded-xl border bg-gradient-to-r from-violet-500/5 via-indigo-500/5 to-purple-500/5 p-4',
+        'rounded-xl border bg-gradient-to-r from-violet-500/5 via-indigo-500/5 to-purple-500/5 overflow-hidden',
         className,
       )}
     >
-      <div className="flex items-center justify-between mb-3">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
         <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 shadow-sm">
-            <BrainCircuit className="h-3.5 w-3.5 text-white" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 shadow-sm">
+            <BrainCircuit className="h-4 w-4 text-white" />
           </div>
           <div>
             <h3 className="text-sm font-semibold flex items-center gap-1.5">
               AI Intelligence Briefing
               <Sparkles className="h-3 w-3 text-violet-400" />
             </h3>
-            <p className="text-[10px] text-muted-foreground">Generated from live graph data</p>
+            <p className="text-[10px] text-muted-foreground">
+              {hasGenerated ? 'Generated from live Neo4j graph data' : 'Click generate to analyze live data'}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* Confidence badge */}
           {!loading && narrative && (
             <span className={cn('inline-flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full', confColor)}>
               <ShieldCheck className="h-2.5 w-2.5" />
               {confidence}
             </span>
           )}
-          {/* Freshness label */}
           {generatedAt && !loading && (
             <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
               <Clock className="h-2.5 w-2.5" />
               {timeSince(generatedAt)}
             </span>
           )}
-          <button
-            onClick={fetchNarrative}
-            disabled={loading}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={cn('h-3 w-3', loading && 'animate-spin')} />
-            Refresh
-          </button>
+          {hasGenerated && (
+            <button
+              onClick={fetchNarrative}
+              disabled={loading}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={cn('h-3 w-3', loading && 'animate-spin')} />
+              Refresh
+            </button>
+          )}
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
-          <span className="flex gap-1">
-            <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce [animation-delay:0ms]" />
-            <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce [animation-delay:150ms]" />
-            <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce [animation-delay:300ms]" />
-          </span>
-          Analyzing organizational data…
-        </div>
-      ) : error ? (
-        <p className="text-sm text-red-400 py-1">{error}</p>
-      ) : (
-        <div className="text-sm leading-relaxed text-foreground/90 prose prose-sm dark:prose-invert prose-p:my-1 prose-headings:my-2 max-w-none">
-          <ReactMarkdown>{narrative}</ReactMarkdown>
-        </div>
-      )}
+      {/* Body */}
+      <div className="px-4 py-3">
+        <AnimatePresence mode="wait">
+          {!hasGenerated && !loading && (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center py-6 gap-4"
+            >
+              <div className="relative">
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500/15 to-indigo-500/15 blur-xl" />
+                <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 border border-violet-500/20">
+                  <FileText className="h-8 w-8 text-violet-400" />
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium text-foreground/80">Ready to generate your briefing</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  AI will analyze live organizational data and produce<br/>
+                  actionable insights tailored to your {role} role
+                </p>
+              </div>
+              <button
+                onClick={fetchNarrative}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md hover:from-violet-500 hover:to-indigo-500 transition-all hover:shadow-lg active:scale-[0.98]"
+              >
+                <Zap className="h-4 w-4" />
+                Generate Intelligence Briefing
+              </button>
+            </motion.div>
+          )}
+
+          {loading && (
+            <motion.div
+              key="loading"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="flex flex-col items-center py-8 gap-3"
+            >
+              <div className="relative h-12 w-12">
+                <div className="absolute inset-0 rounded-full bg-violet-500/20 animate-ping" />
+                <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600">
+                  <BrainCircuit className="h-6 w-6 text-white animate-pulse" />
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-medium">Analyzing organizational data…</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Querying knowledge graph • Running AI analysis • Generating insights
+                </p>
+              </div>
+              <div className="flex gap-1 mt-1">
+                <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce [animation-delay:0ms]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce [animation-delay:150ms]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce [animation-delay:300ms]" />
+              </div>
+            </motion.div>
+          )}
+
+          {error && !loading && (
+            <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+              <p className="text-sm text-red-400 py-2">{error}</p>
+              <button onClick={fetchNarrative} className="text-xs text-primary hover:underline">Try again</button>
+            </motion.div>
+          )}
+
+          {!loading && !error && narrative && (
+            <motion.div
+              key="content"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              className="text-sm leading-relaxed text-foreground/90 prose prose-sm dark:prose-invert prose-p:my-1.5 prose-headings:my-3 prose-headings:text-foreground prose-ul:my-1 prose-li:my-0.5 prose-h2:text-base prose-h2:font-bold prose-strong:text-foreground max-w-none"
+            >
+              <ReactMarkdown>{narrative}</ReactMarkdown>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </motion.div>
   );
 };

@@ -260,13 +260,14 @@ async def get_dashboard_data(role: str):
                 OPTIONAL MATCH (p)-[:HAS_TICKET]->(tk:Ticket)
                 OPTIONAL MATCH (tk)<-[:ASSIGNED_TO]-(m:Member)
                 WITH t, p, collect(DISTINCT tk { .*, assignee: m.name }) as tickets
-                RETURN t.name as team, p { .* } as project, tickets
+                RETURN t.name as team, t.id as team_id, p { .* } as project, tickets
                 ORDER BY t.name, p.name
             """)
             projects = []
             for r in records:
                 proj = dict(r["project"]) if r["project"] else {}
                 proj["team"] = r["team"]
+                proj["team_id"] = r["team_id"]
                 proj["tickets"] = [dict(tk) for tk in r["tickets"] if tk.get("id")]
                 projects.append(proj)
             data["projects"] = projects
@@ -901,15 +902,83 @@ async def get_narrative(role: str):
         combined_context = "\n\n".join(context_parts)
 
         role_prompts = {
-            "engineer": "You are a senior engineering lead. Based on the project data below, provide a 2-3 sentence briefing on what engineers should focus on today. Highlight blockers, overdue items, and priority work. Be direct and actionable.",
-            "hr": "You are an HR strategist. Based on the workforce data below, provide a 2-3 sentence briefing on team health, workload distribution, and any staffing concerns. Flag overloaded or idle team members.",
-            "chairperson": "You are a chief delivery officer. Based on the project and workforce data below, provide a 2-3 sentence executive briefing on delivery health, top risks, and recommended decisions. Be concise and strategic.",
-            "finance": "You are a finance analyst. Based on the resource and intervention data below, provide a 2-3 sentence briefing on cost efficiency, resource utilization, and ROI of potential interventions. Focus on numbers and impact.",
+            "engineer": """You are a senior engineering lead and technical strategist. Based on the live project data below, produce a comprehensive intelligence briefing in Markdown with these sections:
+
+## 🔥 Critical Priorities
+Top 2-3 things engineers must address TODAY (blockers, overdue, high-priority tickets).
+
+## 📊 Sprint Health
+Overall velocity assessment — what % is on track, what's slipping.
+
+## ⚠️ Risk Flags
+Any projects or tickets showing warning signs (blocked chains, unassigned work, deadline pressure).
+
+## 💡 Recommendations
+3 concrete, actionable next steps ranked by impact.
+
+Use bullet points, bold key metrics. Be direct and data-driven. Reference specific project names and ticket counts.""",
+
+            "hr": """You are an HR strategist and workforce analytics expert. Based on the live workforce data below, produce a comprehensive intelligence briefing in Markdown with these sections:
+
+## 👥 Workforce Overview
+Team size, distribution, and utilization summary.
+
+## 🔴 Burnout Risk
+Members with 3+ active tickets who may be overloaded. Suggest rebalancing.
+
+## 🟡 Underutilization
+Members with 0 tickets who could be reassigned.
+
+## 📋 Hiring Recommendations
+Based on workload patterns, suggest which roles to hire for.
+
+## 💡 Action Items
+3 concrete steps to improve team health.
+
+Use bullet points, bold key metrics. Reference specific names and numbers.""",
+
+            "chairperson": """You are a Chief Delivery Officer reporting to the board. Based on the live project and workforce data below, produce a strategic intelligence briefing in Markdown with these sections:
+
+## 📈 Executive Summary
+3-sentence overview of organizational delivery health.
+
+## 🔴 Top Risks
+Projects with the most blockers, lowest progress, or deadline pressure. Quantify impact.
+
+## 🟢 Wins & Momentum
+What's going well — completed tickets, on-track projects.
+
+## 👥 Resource Concerns
+Overloaded members, staffing gaps, cross-team dependencies.
+
+## 🎯 Strategic Recommendations
+5 ranked decisions you'd recommend to the board, with expected impact.
+
+## 📅 90-Day Outlook
+2-3 sentences on trajectory if current trends continue.
+
+Be data-driven, cite specific numbers, project names, and team names.""",
+
+            "finance": """You are a CFO/Finance Director. Based on the resource and cost data below, produce a financial intelligence briefing in Markdown with these sections:
+
+## 💰 Cost Overview
+Total burn rate, cost per team, cost per project.
+
+## 📊 ROI Analysis
+Which teams/projects deliver the best return? Rank by efficiency.
+
+## ⚠️ Financial Risks
+Projects burning budget without proportional delivery. Quantify exposure.
+
+## 💡 Cost Optimization
+3 specific recommendations to reduce costs or improve ROI.
+
+Use dollar figures, percentages, and concrete metrics. Be analytical.""",
         }
 
         messages = [
-            {"role": "system", "content": role_prompts.get(role, "Provide a brief intelligence summary.")},
-            {"role": "user", "content": f"Here is the live organizational data:\n\n{combined_context}\n\nProvide your intelligence briefing now."},
+            {"role": "system", "content": role_prompts.get(role, "Provide a comprehensive intelligence summary with clear sections, metrics, and actionable recommendations.")},
+            {"role": "user", "content": f"Here is the LIVE organizational data from our Neo4j knowledge graph:\n\n{combined_context}\n\nGenerate your full intelligence briefing now. Use ONLY the data provided — do NOT invent facts."},
         ]
 
         narrative = model_router.generate(TaskType.SUMMARY, messages)
@@ -989,6 +1058,123 @@ async def get_available_roles():
         }
         for role, p in ROLE_PROFILES.items()
     }
+
+
+@app.get("/graph/knowledge")
+async def get_knowledge_graph():
+    """
+    Return knowledge graph data for neural visualization.
+    Returns { nodes: [...], edges: [...] } with team, member, project, and skill nodes.
+    """
+    try:
+        nodes = []
+        edges = []
+
+        # Get Teams
+        team_records, _ = neo4j_client.execute_query("""
+            MATCH (t:Team)
+            OPTIONAL MATCH (t)<-[:MEMBER_OF]-(m:Member)
+            OPTIONAL MATCH (t)-[:HAS_PROJECT]->(p:Project)
+            RETURN t { .* } as team, 
+                   count(DISTINCT m) as member_count,
+                   count(DISTINCT p) as project_count
+        """)
+        
+        for r in team_records:
+            team = dict(r["team"])
+            nodes.append({
+                "id": team.get("id", team.get("name")),
+                "label": team.get("name", "Unknown Team"),
+                "type": "team",
+                "properties": {
+                    "members": r["member_count"],
+                    "projects": r["project_count"],
+                }
+            })
+
+        # Get Members
+        member_records, _ = neo4j_client.execute_query("""
+            MATCH (m:Member)
+            OPTIONAL MATCH (m)-[:MEMBER_OF]->(t:Team)
+            OPTIONAL MATCH (m)-[:ASSIGNED_TO]->(tk:Ticket)
+            WHERE tk.status <> 'Done'
+            RETURN m { .* } as member,
+                   t.id as team_id,
+                   count(DISTINCT tk) as active_tickets
+        """)
+        
+        for r in member_records:
+            member = dict(r["member"])
+            member_id = member.get("id", member.get("name"))
+            nodes.append({
+                "id": member_id,
+                "label": member.get("name", "Unknown Member"),
+                "type": "member",
+                "properties": {
+                    "role": member.get("role", "N/A"),
+                    "active_tickets": r["active_tickets"],
+                }
+            })
+            
+            # Add edge to team
+            if r["team_id"]:
+                edges.append({
+                    "source": member_id,
+                    "target": r["team_id"],
+                    "type": "MEMBER_OF"
+                })
+
+        # Get Projects
+        project_records, _ = neo4j_client.execute_query("""
+            MATCH (p:Project)<-[:HAS_PROJECT]-(t:Team)
+            OPTIONAL MATCH (p)-[:HAS_TICKET]->(tk:Ticket)
+            WHERE tk.status <> 'Done'
+            RETURN p { .* } as project,
+                   t.id as team_id,
+                   count(DISTINCT tk) as active_tickets
+        """)
+        
+        for r in project_records:
+            project = dict(r["project"])
+            project_id = project.get("id", project.get("name"))
+            nodes.append({
+                "id": project_id,
+                "label": project.get("name", "Unknown Project"),
+                "type": "project",
+                "properties": {
+                    "status": project.get("status", "Unknown"),
+                    "progress": project.get("progress", 0),
+                    "active_tickets": r["active_tickets"],
+                }
+            })
+            
+            # Add edge to team
+            if r["team_id"]:
+                edges.append({
+                    "source": r["team_id"],
+                    "target": project_id,
+                    "type": "HAS_PROJECT"
+                })
+
+        # Get Member -> Project assignments (through tickets)
+        assignment_records, _ = neo4j_client.execute_query("""
+            MATCH (m:Member)-[:ASSIGNED_TO]->(tk:Ticket)<-[:HAS_TICKET]-(p:Project)
+            RETURN DISTINCT m.id as member_id, p.id as project_id
+        """)
+        
+        for r in assignment_records:
+            if r["member_id"] and r["project_id"]:
+                edges.append({
+                    "source": r["member_id"],
+                    "target": r["project_id"],
+                    "type": "WORKS_ON"
+                })
+
+        return {"nodes": nodes, "edges": edges}
+        
+    except Exception as e:
+        logger.error(f"Knowledge graph error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.get("/")

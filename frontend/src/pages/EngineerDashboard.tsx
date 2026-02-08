@@ -47,7 +47,7 @@ const EngineerDashboard = () => {
 
   const projects = (data?.projects || []).map((p: any, idx: number) => ({
     ...p,
-    teamId: p.team_id || `t${idx}`,
+    teamId: p.team_id || p.teamId || `t${idx + 1}`,
     teamName: p.team || 'Unknown',
   }));
   const tickets = projects.flatMap((p: any) => p.tickets || []);
