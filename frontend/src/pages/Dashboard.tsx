@@ -102,7 +102,7 @@ const Dashboard = () => {
       className="space-y-6"
     >
       {/* Hero Header */}
-      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-teal-50 via-white to-emerald-50 px-8 py-7">
+      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border border-border bg-card px-8 py-7">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(20,184,166,0.08),transparent_60%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(16,185,129,0.05),transparent_60%)]" />
         <div className="relative flex items-center justify-between">
@@ -144,7 +144,7 @@ const Dashboard = () => {
           to="/chat"
           className="group relative overflow-hidden rounded-xl border border-border/40 bg-card p-5 transition-all hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/5"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-teal-500/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-teal-500/[0.03] opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative flex items-start gap-4">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-500/10 shrink-0 ring-1 ring-teal-500/20">
               <MessageCircle className="h-5 w-5 text-teal-500" />
@@ -439,7 +439,7 @@ const StatCard = ({ icon: Icon, label, value, sub, color, accent }: StatCardProp
 
   return (
     <div className="relative overflow-hidden rounded-xl border border-border/40 bg-card p-4">
-      <div className={cn("absolute inset-0 bg-gradient-to-br opacity-40", accent)} />
+      <div className={cn("absolute inset-0 opacity-40", accent)} />
       <div className="relative">
         <div className="flex items-center justify-between mb-3">
           <span className={cn('flex h-9 w-9 items-center justify-center rounded-lg', colorClasses[color])}>

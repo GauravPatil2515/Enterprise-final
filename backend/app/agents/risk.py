@@ -63,6 +63,81 @@ class DeliveryRiskAgent:
             "tickets": [dict(t) for t in rec["tickets"] if t.get("id")],
         }
 
+    def _generate_structured_fallback(
+        self,
+        project_name: str,
+        team_name: str,
+        risk_score: float,
+        risk_level: str,
+        days_to_deadline: int,
+        blocked_tickets: List[Dict],
+        overdue_tickets: List[Dict],
+        near_deadline_tickets: List[Dict],
+        decision_comparison: List,
+        actions: List[str],
+    ) -> str:
+        """
+        Generate structured markdown reasoning from deterministic data.
+        Used when LLM is unavailable or fails.
+        """
+        parts = []
+        
+        # Primary Risk Driver
+        if blocked_tickets:
+            tk = blocked_tickets[0]
+            parts.append(
+                f"**Primary Risk**: \"{tk.get('title', 'Unknown')}\" is blocked by "
+                f"\"{tk.get('blocker_title', 'an upstream dependency')}\" "
+                f"(status: {tk.get('blocker_status', 'In Progress')}). "
+                f"This creates a critical dependency chain affecting downstream work."
+            )
+        elif overdue_tickets:
+            tk = overdue_tickets[0]
+            parts.append(
+                f"**Primary Risk**: \"{tk.get('title', 'Unknown')}\" is overdue "
+                f"(due: {tk.get('dueDate', 'unknown')}). "
+                f"This indicates timeline pressure and potential cascading delays."
+            )
+        elif near_deadline_tickets:
+            tk = near_deadline_tickets[0]
+            parts.append(
+                f"**Primary Risk**: \"{tk.get('title', 'Unknown')}\" is due in {days_to_deadline} days "
+                f"and may require acceleration to meet the deadline."
+            )
+        else:
+            parts.append(
+                f"**Status**: {project_name} is on track with no critical blockers detected."
+            )
+        
+        # Counterfactual Analysis
+        if risk_score > 0.3:
+            delay_estimate = max(1, int(risk_score * days_to_deadline * 0.5))
+            parts.append(
+                f"**If No Action Taken**: Based on current velocity and {len(blocked_tickets)} blocked items, "
+                f"delivery could slip by approximately {delay_estimate} days. "
+                f"The blocked tickets prevent parallel progress on dependent work."
+            )
+        
+        # Decision Comparison
+        recommended = [d for d in decision_comparison if d.recommended]
+        if len(recommended) >= 2:
+            d1, d2 = recommended[0], recommended[1]
+            parts.append(
+                f"**Recommended Intervention**: {d1.action} offers {d1.risk_reduction:.0%} risk reduction "
+                f"at {d1.cost} cost. Alternative: {d2.action} ({d2.risk_reduction:.0%} reduction) — "
+                f"choose based on available resources and timeline constraints."
+            )
+        elif len(recommended) == 1:
+            d = recommended[0]
+            parts.append(
+                f"**Recommended Intervention**: {d.action} — achieves {d.risk_reduction:.0%} risk reduction "
+                f"with {d.cost} organizational cost. {d.reason}"
+            )
+        elif actions:
+            parts.append(f"**Suggested Action**: {actions[0]}")
+        
+        return " ".join(parts)
+
     def analyze(self, project_id: str) -> AnalysisResult:
         """
         Deterministic risk analysis from real Neo4j data.
@@ -250,7 +325,19 @@ Do NOT introduce new facts. Only use the evidence above.
                 primary_reason = llm_client.generate_reasoning(prompt)
             except Exception as e:
                 logger.warning(f"LLM reasoning failed: {e}")
-                primary_reason = reasons[0] if reasons else "Analysis complete."
+                # Structured fallback: Generate detailed reasoning from deterministic data
+                primary_reason = self._generate_structured_fallback(
+                    project_name=project.get('name', project_id),
+                    team_name=team_name,
+                    risk_score=risk_score,
+                    risk_level=risk_level,
+                    days_to_deadline=days_to_deadline,
+                    blocked_tickets=blocked_tickets,
+                    overdue_tickets=overdue_tickets,
+                    near_deadline_tickets=near_deadline_tickets,
+                    decision_comparison=decision_comparison,
+                    actions=actions,
+                )
 
         return AnalysisResult(
             project_id=project_id,

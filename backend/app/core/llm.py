@@ -17,9 +17,12 @@ SYSTEM_PROMPT = (
 
 class FeatherlessClient:
     def __init__(self):
+        self.api_key = settings.FEATHERLESS_API_KEY
+        if not self.api_key:
+            logger.warning("⚠️ FEATHERLESS_API_KEY not configured. LLM features will use fallback reasoning.")
         self.client = OpenAI(
             base_url=settings.FEATHERLESS_BASE_URL,
-            api_key=settings.FEATHERLESS_API_KEY
+            api_key=self.api_key or "dummy-key-for-init"
         )
         self.model = settings.MODEL_ID
 
@@ -27,6 +30,8 @@ class FeatherlessClient:
         """
         One-shot reasoning for risk analysis summaries.
         """
+        if not self.api_key:
+            raise RuntimeError("No FEATHERLESS_API_KEY configured - using fallback reasoning")
         try:
             response = self.client.chat.completions.create(
                 model=self.model,
