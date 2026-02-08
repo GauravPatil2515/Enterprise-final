@@ -460,8 +460,8 @@ const FollowUpSuggestions = ({ onSuggestion }: { onSuggestion: (q: string) => vo
     'How can we mitigate these risks?',
     'Break this down into action items',
     'Who should own this work?',
-    'Compare with last sprint's metrics',
-    'What's the hiring impact here?',
+    "Compare with last sprint's metrics",
+    "What's the hiring impact here?",
     'Generate a stakeholder summary',
   ];
 

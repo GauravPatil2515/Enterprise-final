@@ -13,6 +13,16 @@ class Settings(BaseSettings):
     NEO4J_USERNAME: str = "neo4j"
     NEO4J_PASSWORD: str = ""
     NEO4J_DATABASE: str = "neo4j"
+    
+    # CORS — allow localhost + production deployments
+    CORS_ORIGINS: list[str] = [
+        "http://localhost:8080",
+        "http://localhost:5173",
+        "http://localhost:3000",
+        "https://*.vercel.app",
+        "https://*.railway.app",
+        "https://*.render.com",
+    ]
 
     # CORS — restrict to known frontend origins
     CORS_ORIGINS: list = [

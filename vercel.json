@@ -1,0 +1,31 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "backend/app/main.py",
+      "use": "@vercel/python",
+      "config": {
+        "maxLambdaSize": "15mb"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "backend/app/main.py"
+    },
+    {
+      "src": "/graph/(.*)",
+      "dest": "backend/app/main.py"
+    }
+  ],
+  "env": {
+    "FEATHERLESS_API_KEY": "@featherless_api_key",
+    "FEATHERLESS_BASE_URL": "https://api.featherless.ai/v1",
+    "MODEL_ID": "Qwen/Qwen2.5-32B-Instruct",
+    "NEO4J_URI": "@neo4j_uri",
+    "NEO4J_USERNAME": "@neo4j_username",
+    "NEO4J_PASSWORD": "@neo4j_password",
+    "NEO4J_DATABASE": "neo4j"
+  }
+}
