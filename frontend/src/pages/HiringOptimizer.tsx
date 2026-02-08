@@ -23,6 +23,7 @@ import { api } from '@/services/api';
 import { toast } from 'sonner';
 
 interface DeveloperMetrics {
+  id: string;
   name: string;
   role: string;
   performance: number;
@@ -73,6 +74,7 @@ const HiringOptimizer = () => {
               : 8;
             
             allMembers.push({
+              id: `${team.id}-${member.name}`,
               name: member.name,
               role: member.role,
               performance: member.performance || 3.5,
@@ -95,9 +97,9 @@ const HiringOptimizer = () => {
     loadMembers();
   }, []);
 
-  const toggleJuniorSelection = (name: string) => {
+  const toggleJuniorSelection = (id: string) => {
     setSelectedJuniors(prev => 
-      prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]
+      prev.includes(id) ? prev.filter(n => n !== id) : [...prev, id]
     );
   };
 
@@ -111,7 +113,7 @@ const HiringOptimizer = () => {
     
     // Simulate API call with setTimeout
     setTimeout(() => {
-      const juniorDevs = members.filter(m => selectedJuniors.includes(m.name));
+      const juniorDevs = members.filter(m => selectedJuniors.includes(m.id));
       
       // Calculate current team metrics with safety checks
       const currentTeamOutput = juniorDevs.reduce((sum, dev) => {
@@ -208,24 +210,24 @@ const HiringOptimizer = () => {
       className="container mx-auto p-6 space-y-6"
     >
       {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-8 py-6">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(168,85,247,0.12),transparent_60%)]" />
+      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-teal-50 via-white to-emerald-50 px-8 py-6">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(20,184,166,0.08),transparent_60%)]" />
         <div className="relative flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 p-2.5 text-white shadow-lg">
+            <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 p-2.5 text-white shadow-lg shadow-teal-500/20">
               <Calculator className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-0.5">
-                <h1 className="text-xl font-bold text-white">Hiring Optimizer</h1>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/30">AI-POWERED</span>
+                <h1 className="text-xl font-bold text-foreground">Hiring Optimizer</h1>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-500/10 text-teal-600 ring-1 ring-teal-500/20">AI-POWERED</span>
               </div>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-muted-foreground">
                 Decision support for strategic hiring across teams
               </p>
             </div>
           </div>
-          <Badge variant="outline" className="text-xs border-white/10 text-slate-300">
+          <Badge variant="outline" className="text-xs">
             <Zap className="h-3 w-3 mr-1" />
             HR Analytics
           </Badge>
@@ -253,10 +255,10 @@ const HiringOptimizer = () => {
                   .filter(m => !m.role.toLowerCase().includes('senior'))
                   .map(member => (
                     <button
-                      key={member.name}
-                      onClick={() => toggleJuniorSelection(member.name)}
+                      key={member.id}
+                      onClick={() => toggleJuniorSelection(member.id)}
                       className={`w-full text-left p-3 rounded-lg border transition-all ${
-                        selectedJuniors.includes(member.name)
+                        selectedJuniors.includes(member.id)
                           ? 'bg-primary/10 border-primary'
                           : 'bg-muted/50 border-border hover:border-primary/50'
                       }`}
@@ -432,7 +434,7 @@ const HiringOptimizer = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-sm text-muted-foreground">Avg Performance</span>
                       <span className="font-semibold">
-                        {(members.filter(m => selectedJuniors.includes(m.name)).reduce((sum, m) => sum + m.performance, 0) / selectedJuniors.length).toFixed(1)}/5.0
+                        {(members.filter(m => selectedJuniors.includes(m.id)).reduce((sum, m) => sum + m.performance, 0) / selectedJuniors.length).toFixed(1)}/5.0
                       </span>
                     </div>
                   </CardContent>

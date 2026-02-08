@@ -102,37 +102,37 @@ const Dashboard = () => {
       className="space-y-6"
     >
       {/* Hero Header */}
-      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-8 py-7">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(124,58,237,0.12),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(59,130,246,0.08),transparent_60%)]" />
+      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-teal-50 via-white to-emerald-50 px-8 py-7">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(20,184,166,0.08),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(16,185,129,0.05),transparent_60%)]" />
         <div className="relative flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2.5 mb-2">
-              <div className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[11px] font-medium tracking-wider uppercase text-emerald-400/80">System Online</span>
+              <div className="flex h-2 w-2 rounded-full bg-teal-500 animate-pulse" />
+              <span className="text-[11px] font-medium tracking-wider uppercase text-teal-600">System Online</span>
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight">
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">
               Decision Intelligence
             </h1>
-            <p className="text-slate-400 text-sm mt-1 max-w-md">
+            <p className="text-muted-foreground text-sm mt-1 max-w-md">
               Real-time delivery intelligence across {stats.totalProjects} active projects
               with {stats.totalTickets} tracked work items.
             </p>
           </div>
           <div className="hidden md:flex items-center gap-6">
             <div className="text-center">
-              <p className="text-2xl font-bold text-white">{stats.totalTickets > 0 ? Math.round((stats.completedTickets / stats.totalTickets) * 100) : 0}%</p>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider">Completion</p>
+              <p className="text-2xl font-bold text-foreground">{stats.totalTickets > 0 ? Math.round((stats.completedTickets / stats.totalTickets) * 100) : 0}%</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Completion</p>
             </div>
-            <div className="w-px h-10 bg-slate-700" />
+            <div className="w-px h-10 bg-border" />
             <div className="text-center">
-              <p className="text-2xl font-bold text-white">{stats.inProgress}</p>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider">In Progress</p>
+              <p className="text-2xl font-bold text-foreground">{stats.inProgress}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">In Progress</p>
             </div>
-            <div className="w-px h-10 bg-slate-700" />
+            <div className="w-px h-10 bg-border" />
             <div className="text-center">
-              <p className={cn("text-2xl font-bold", stats.highPriority > 0 ? "text-red-400" : "text-emerald-400")}>{stats.highPriority}</p>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider">High Priority</p>
+              <p className={cn("text-2xl font-bold", stats.highPriority > 0 ? "text-red-500" : "text-teal-600")}>{stats.highPriority}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">High Priority</p>
             </div>
           </div>
         </div>
@@ -142,12 +142,12 @@ const Dashboard = () => {
       <motion.div variants={itemVariants} className="grid gap-3 sm:grid-cols-3">
         <Link
           to="/chat"
-          className="group relative overflow-hidden rounded-xl border border-border/40 bg-card p-5 transition-all hover:border-violet-500/30 hover:shadow-lg hover:shadow-violet-500/5"
+          className="group relative overflow-hidden rounded-xl border border-border/40 bg-card p-5 transition-all hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/5"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-violet-500/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-gradient-to-br from-teal-500/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative flex items-start gap-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-500/10 shrink-0 ring-1 ring-violet-500/20">
-              <MessageCircle className="h-5 w-5 text-violet-400" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-500/10 shrink-0 ring-1 ring-teal-500/20">
+              <MessageCircle className="h-5 w-5 text-teal-500" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
@@ -159,17 +159,17 @@ const Dashboard = () => {
               </p>
             </div>
           </div>
-          <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/20 group-hover:text-violet-400 transition-colors" />
+          <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/20 group-hover:text-teal-500 transition-colors" />
         </Link>
 
         <Link
           to="/graph"
-          className="group relative overflow-hidden rounded-xl border border-border/40 bg-card p-5 transition-all hover:border-blue-500/30 hover:shadow-lg hover:shadow-blue-500/5"
+          className="group relative overflow-hidden rounded-xl border border-border/40 bg-card p-5 transition-all hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/5"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-gradient-to-br from-teal-500/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative flex items-start gap-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-500/10 shrink-0 ring-1 ring-blue-500/20">
-              <GitGraph className="h-5 w-5 text-blue-400" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-500/10 shrink-0 ring-1 ring-teal-500/20">
+              <GitGraph className="h-5 w-5 text-teal-500" />
             </div>
             <div className="min-w-0">
               <h3 className="font-semibold text-sm">Knowledge Graph</h3>
@@ -178,17 +178,17 @@ const Dashboard = () => {
               </p>
             </div>
           </div>
-          <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/20 group-hover:text-blue-400 transition-colors" />
+          <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/20 group-hover:text-teal-500 transition-colors" />
         </Link>
 
         <Link
           to="/role-dashboard"
-          className="group relative overflow-hidden rounded-xl border border-border/40 bg-card p-5 transition-all hover:border-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/5"
+          className="group relative overflow-hidden rounded-xl border border-border/40 bg-card p-5 transition-all hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/5"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-gradient-to-br from-teal-500/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative flex items-start gap-4">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-500/10 shrink-0 ring-1 ring-emerald-500/20">
-              <Brain className="h-5 w-5 text-emerald-400" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-500/10 shrink-0 ring-1 ring-teal-500/20">
+              <Brain className="h-5 w-5 text-teal-500" />
             </div>
             <div className="min-w-0">
               <h3 className="font-semibold text-sm">Role Insights</h3>
@@ -197,7 +197,7 @@ const Dashboard = () => {
               </p>
             </div>
           </div>
-          <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/20 group-hover:text-emerald-400 transition-colors" />
+          <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/20 group-hover:text-teal-500 transition-colors" />
         </Link>
       </motion.div>
 
@@ -206,9 +206,9 @@ const Dashboard = () => {
         variants={itemVariants}
         className="grid gap-3 grid-cols-2 lg:grid-cols-4"
       >
-        <StatCard icon={FolderKanban} label="Projects" value={stats.totalProjects} sub={`${stats.openTickets} open tickets`} color="primary" accent="from-blue-500/10 to-indigo-500/5" />
-        <StatCard icon={Clock} label="In Progress" value={stats.inProgress} sub={`${stats.totalTickets} total tickets`} color="warning" accent="from-amber-500/10 to-orange-500/5" />
-        <StatCard icon={CheckCircle2} label="Completed" value={stats.completedTickets} sub={`${stats.totalTickets > 0 ? Math.round((stats.completedTickets / stats.totalTickets) * 100) : 0}% completion`} color="success" accent="from-emerald-500/10 to-green-500/5" />
+        <StatCard icon={FolderKanban} label="Projects" value={stats.totalProjects} sub={`${stats.openTickets} open tickets`} color="primary" accent="from-teal-500/10 to-teal-500/5" />
+        <StatCard icon={Clock} label="In Progress" value={stats.inProgress} sub={`${stats.totalTickets} total tickets`} color="warning" accent="from-amber-500/10 to-amber-500/5" />
+        <StatCard icon={CheckCircle2} label="Completed" value={stats.completedTickets} sub={`${stats.totalTickets > 0 ? Math.round((stats.completedTickets / stats.totalTickets) * 100) : 0}% completion`} color="success" accent="from-teal-500/10 to-emerald-500/5" />
         <StatCard icon={AlertCircle} label="High Priority" value={stats.highPriority} sub="Needs attention" color="destructive" accent="from-red-500/10 to-rose-500/5" />
       </motion.div>
 

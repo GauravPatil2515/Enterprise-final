@@ -89,7 +89,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     <div className="flex h-full flex-col bg-sidebar">
       {/* Logo */}
       <div className="flex h-14 items-center gap-3 border-b border-sidebar-border px-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-teal-600">
           <Cpu className="h-4.5 w-4.5 text-white" />
         </div>
         <div className="flex-1 min-w-0">

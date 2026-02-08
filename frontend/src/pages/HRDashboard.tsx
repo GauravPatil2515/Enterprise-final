@@ -92,23 +92,23 @@ const HRDashboard = () => {
       className="space-y-6"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-8 py-6">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(34,197,94,0.12),transparent_60%)]" />
+      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-teal-50 via-white to-emerald-50 px-8 py-6">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(20,184,166,0.08),transparent_60%)]" />
         <div className="relative flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-green-700 p-2.5 text-white shadow-lg">
+            <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 p-2.5 text-white shadow-lg shadow-teal-500/20">
               <Users className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-0.5">
-                <h1 className="text-xl font-bold text-white">HR Dashboard</h1>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-400 ring-1 ring-green-500/30">AI-POWERED</span>
+                <h1 className="text-xl font-bold text-foreground">HR Dashboard</h1>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-500/10 text-teal-600 ring-1 ring-teal-500/20">AI-POWERED</span>
               </div>
-              <p className="text-sm text-slate-400">Team workload, burnout risk, and member analytics</p>
+              <p className="text-sm text-muted-foreground">Team workload, burnout risk, and member analytics</p>
             </div>
           </div>
           <div className="hidden md:flex items-center gap-3">
-            <Button asChild size="sm" className="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white border-0">
+            <Button asChild size="sm" className="bg-teal-600 hover:bg-teal-700 text-white border-0">
               <Link to="/hiring-optimizer">
                 <TrendingUp className="h-3.5 w-3.5 mr-1.5" />
                 Hiring Optimizer
@@ -121,8 +121,8 @@ const HRDashboard = () => {
           {/* Stats */}
           <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[
-              { label: 'Total Members', value: members.length, icon: <Users className="h-4 w-4" />, color: 'bg-blue-500/10 text-blue-400' },
-              { label: 'Active Workers', value: members.length - idle.length, icon: <UserCheck className="h-4 w-4" />, color: 'bg-green-500/10 text-green-400' },
+              { label: 'Total Members', value: members.length, icon: <Users className="h-4 w-4" />, color: 'bg-teal-500/10 text-teal-600' },
+              { label: 'Active Workers', value: members.length - idle.length, icon: <UserCheck className="h-4 w-4" />, color: 'bg-emerald-500/10 text-emerald-600' },
               { label: 'Overloaded (3+)', value: overloaded.length, icon: <AlertTriangle className="h-4 w-4" />, color: 'bg-red-500/10 text-red-400' },
               { label: 'Burnout Risk', value: burnoutRisk.length, icon: <Flame className="h-4 w-4" />, color: 'bg-orange-500/10 text-orange-400' },
               { label: 'Idle / Under-utilized', value: idle.length, icon: <Briefcase className="h-4 w-4" />, color: 'bg-amber-500/10 text-amber-400' },

@@ -7,64 +7,64 @@
 /* Atlassian/Jira Design System - 2026 Edition */
 @layer base {
   :root {
-    /* Professional Enterprise Palette (Slate-based) */
+    /* Clean White + Teal Green Enterprise Palette */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 220 20% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 220 20% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover-foreground: 220 20% 14%;
 
-    /* Brand Blue - Trustworthy & Professional */
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --primary-hover: 221.2 83.2% 45%;
+    /* Brand Teal - Trustworthy & Modern */
+    --primary: 168 76% 42%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 168 76% 36%;
 
     /* Secondary - Subtle Grays */
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 210 20% 96%;
+    --secondary-foreground: 220 20% 14%;
 
     /* Muted */
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 16% 47%;
 
     /* Accent */
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 168 76% 96%;
+    --accent-foreground: 168 76% 30%;
 
     /* Status Colors - Refined */
-    --success: 142.1 76.2% 36.3%;
-    --success-foreground: 355.7 100% 97.3%;
+    --success: 160 84% 39%;
+    --success-foreground: 0 0% 100%;
     
     --warning: 45 93% 47%;
     --warning-foreground: 0 0% 98%;
     
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
 
     /* Priority Colors */
     --priority-high: 0 72% 51%;
     --priority-medium: 32 95% 44%;
-    --priority-low: 142 71% 45%;
+    --priority-low: 160 84% 39%;
 
     /* Borders and Inputs */
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 168 76% 42%;
 
     --radius: 0.5rem;
 
-    /* Sidebar - Subtle contrast */
-    --sidebar-background: 210 40% 98%; /* Very light blue-grey */
-    --sidebar-foreground: 222.2 84% 4.9%;
-    --sidebar-primary: 221.2 83.2% 53.3%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 210 40% 96.1%;
-    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-    --sidebar-border: 214.3 31.8% 91.4%;
-    --sidebar-ring: 221.2 83.2% 53.3%;
+    /* Sidebar - Dark Charcoal */
+    --sidebar-background: 215 28% 15%;
+    --sidebar-foreground: 210 20% 92%;
+    --sidebar-primary: 168 76% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 25% 20%;
+    --sidebar-accent-foreground: 210 20% 92%;
+    --sidebar-border: 215 25% 22%;
+    --sidebar-ring: 168 76% 50%;
 
     /* Kanban specific */
     --kanban-todo: 210 40% 98%;  /* Very subtle slate */

@@ -1060,7 +1060,7 @@ async def get_available_roles():
     }
 
 
-@app.get("/graph/knowledge")
+@app.get("/api/graph/knowledge")
 async def get_knowledge_graph():
     """
     Return knowledge graph data for neural visualization.

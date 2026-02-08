@@ -165,19 +165,19 @@ const FinanceDashboard = () => {
       className="space-y-6"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-8 py-6">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(245,158,11,0.12),transparent_60%)]" />
+      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-teal-50 via-white to-emerald-50 px-8 py-6">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(20,184,166,0.08),transparent_60%)]" />
         <div className="relative flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 p-2.5 text-white shadow-lg">
+            <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 p-2.5 text-white shadow-lg shadow-teal-500/20">
               <DollarSign className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-0.5">
-                <h1 className="text-xl font-bold text-white">Financial Intelligence</h1>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 ring-1 ring-amber-500/30">AI-POWERED</span>
+                <h1 className="text-xl font-bold text-foreground">Financial Intelligence</h1>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-500/10 text-teal-600 ring-1 ring-teal-500/20">AI-POWERED</span>
               </div>
-              <p className="text-sm text-slate-400">
+              <p className="text-sm text-muted-foreground">
                 Comprehensive ROI, revenue, and cost analysis across teams
               </p>
             </div>
@@ -186,21 +186,21 @@ const FinanceDashboard = () => {
             {/* Download PDF Button */}
             <button
               onClick={handleDownloadPDF}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:from-amber-600 hover:to-amber-700 transition-all text-sm font-medium shadow-sm"
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-teal-600 text-white hover:bg-teal-700 transition-all text-sm font-medium shadow-sm"
             >
               <Download className="h-4 w-4" />
               Export Report
             </button>
             
             {/* Tab Switcher */}
-            <div className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 p-1">
+            <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/50 p-1">
             {(['overview', 'teams', 'projects'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={cn(
                   'px-3 py-1.5 text-xs font-medium rounded-md transition-all capitalize',
-                  activeTab === tab ? 'bg-white/10 text-white shadow-sm' : 'text-slate-400 hover:text-white',
+                  activeTab === tab ? 'bg-white text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
                 )}
               >
                 {tab}
@@ -214,10 +214,10 @@ const FinanceDashboard = () => {
       {/* Top Stats — always visible */}
       <motion.div variants={itemVariants} className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 gap-3">
             {[
-              { label: 'Teams', value: String(teams.length), icon: <Users className="h-3.5 w-3.5" />, color: 'bg-blue-500/10 text-blue-400' },
-              { label: 'Members', value: String(totalMembers), icon: <Users className="h-3.5 w-3.5" />, color: 'bg-green-500/10 text-green-400' },
-              { label: 'Projects', value: String(totalProjects), icon: <FolderKanban className="h-3.5 w-3.5" />, color: 'bg-purple-500/10 text-purple-400' },
-              { label: 'Blocked', value: String(totalBlocked), icon: <Shield className="h-3.5 w-3.5" />, color: 'bg-red-500/10 text-red-400' },
+              { label: 'Teams', value: String(teams.length), icon: <Users className="h-3.5 w-3.5" />, color: 'bg-teal-500/10 text-teal-600' },
+              { label: 'Members', value: String(totalMembers), icon: <Users className="h-3.5 w-3.5" />, color: 'bg-emerald-500/10 text-emerald-600' },
+              { label: 'Projects', value: String(totalProjects), icon: <FolderKanban className="h-3.5 w-3.5" />, color: 'bg-teal-500/10 text-teal-600' },
+              { label: 'Blocked', value: String(totalBlocked), icon: <Shield className="h-3.5 w-3.5" />, color: 'bg-red-500/10 text-red-500' },
               { label: 'Total CTC/mo', value: fmt(totalCTC), icon: <Wallet className="h-3.5 w-3.5" />, color: 'bg-amber-500/10 text-amber-400' },
               { label: 'Revenue', value: fmt(totalRevenue), icon: <BadgeDollarSign className="h-3.5 w-3.5" />, color: 'bg-emerald-500/10 text-emerald-400' },
               { label: 'Net Profit', value: fmt(totalProfit), icon: totalProfit >= 0 ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />, color: totalProfit >= 0 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400' },

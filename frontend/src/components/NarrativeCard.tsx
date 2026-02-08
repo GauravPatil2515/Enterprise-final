@@ -61,20 +61,20 @@ const NarrativeCard = ({ role, className }: Props) => {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn(
-        'rounded-xl border bg-gradient-to-r from-violet-500/5 via-indigo-500/5 to-purple-500/5 overflow-hidden',
+        'rounded-xl border bg-gradient-to-r from-teal-500/5 via-emerald-500/5 to-cyan-500/5 overflow-hidden',
         className,
       )}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 shadow-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 shadow-sm">
             <BrainCircuit className="h-4 w-4 text-white" />
           </div>
           <div>
             <h3 className="text-sm font-semibold flex items-center gap-1.5">
               AI Intelligence Briefing
-              <Sparkles className="h-3 w-3 text-violet-400" />
+              <Sparkles className="h-3 w-3 text-teal-500" />
             </h3>
             <p className="text-[10px] text-muted-foreground">
               {hasGenerated ? 'Generated from live Neo4j graph data' : 'Click generate to analyze live data'}
@@ -119,9 +119,9 @@ const NarrativeCard = ({ role, className }: Props) => {
               className="flex flex-col items-center py-6 gap-4"
             >
               <div className="relative">
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500/15 to-indigo-500/15 blur-xl" />
-                <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500/10 to-indigo-500/10 border border-violet-500/20">
-                  <FileText className="h-8 w-8 text-violet-400" />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-teal-500/15 to-emerald-500/15 blur-xl" />
+                <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500/10 to-emerald-500/10 border border-teal-500/20">
+                  <FileText className="h-8 w-8 text-teal-500" />
                 </div>
               </div>
               <div className="text-center">
@@ -133,7 +133,7 @@ const NarrativeCard = ({ role, className }: Props) => {
               </div>
               <button
                 onClick={fetchNarrative}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md hover:from-violet-500 hover:to-indigo-500 transition-all hover:shadow-lg active:scale-[0.98]"
+                className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-md hover:from-teal-500 hover:to-emerald-500 transition-all hover:shadow-lg active:scale-[0.98]"
               >
                 <Zap className="h-4 w-4" />
                 Generate Intelligence Briefing
@@ -150,8 +150,8 @@ const NarrativeCard = ({ role, className }: Props) => {
               className="flex flex-col items-center py-8 gap-3"
             >
               <div className="relative h-12 w-12">
-                <div className="absolute inset-0 rounded-full bg-violet-500/20 animate-ping" />
-                <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600">
+                <div className="absolute inset-0 rounded-full bg-teal-500/20 animate-ping" />
+                <div className="relative flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-teal-500 to-emerald-600">
                   <BrainCircuit className="h-6 w-6 text-white animate-pulse" />
                 </div>
               </div>
@@ -162,9 +162,9 @@ const NarrativeCard = ({ role, className }: Props) => {
                 </p>
               </div>
               <div className="flex gap-1 mt-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce [animation-delay:0ms]" />
-                <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce [animation-delay:150ms]" />
-                <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce [animation-delay:300ms]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-bounce [animation-delay:0ms]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-bounce [animation-delay:150ms]" />
+                <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-bounce [animation-delay:300ms]" />
               </div>
             </motion.div>
           )}

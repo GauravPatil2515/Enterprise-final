@@ -97,35 +97,35 @@ const EngineerDashboard = () => {
       className="space-y-6"
     >
       {/* Header */}
-      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-8 py-6">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(59,130,246,0.12),transparent_60%)]" />
+      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-teal-50 via-white to-emerald-50 px-8 py-6">
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(20,184,166,0.08),transparent_60%)]" />
         <div className="relative flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-700 p-2.5 text-white shadow-lg">
+            <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 p-2.5 text-white shadow-lg shadow-teal-500/20">
               <Code2 className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-2 mb-0.5">
-                <h1 className="text-xl font-bold text-white">Engineer Dashboard</h1>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400 ring-1 ring-blue-500/30">AI-POWERED</span>
+                <h1 className="text-xl font-bold text-foreground">Engineer Dashboard</h1>
+                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-500/10 text-teal-600 ring-1 ring-teal-500/20">AI-POWERED</span>
               </div>
-              <p className="text-sm text-slate-400">Your projects, tickets, and sprint performance at a glance</p>
+              <p className="text-sm text-muted-foreground">Your projects, tickets, and sprint performance at a glance</p>
             </div>
           </div>
           <div className="hidden md:flex items-center gap-5">
             <div className="text-center">
-              <p className="text-xl font-bold text-white">{activeTickets.length}</p>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider">Active</p>
+              <p className="text-xl font-bold text-foreground">{activeTickets.length}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Active</p>
             </div>
-            <div className="w-px h-8 bg-slate-700" />
+            <div className="w-px h-8 bg-border" />
             <div className="text-center">
-              <p className="text-xl font-bold text-white">{myInProgress.length}</p>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider">In Progress</p>
+              <p className="text-xl font-bold text-foreground">{myInProgress.length}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">In Progress</p>
             </div>
-            <div className="w-px h-8 bg-slate-700" />
+            <div className="w-px h-8 bg-border" />
             <div className="text-center">
-              <p className="text-xl font-bold text-emerald-400">{tickets.length - activeTickets.length}</p>
-              <p className="text-[10px] text-slate-500 uppercase tracking-wider">Completed</p>
+              <p className="text-xl font-bold text-teal-600">{tickets.length - activeTickets.length}</p>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Completed</p>
             </div>
           </div>
         </div>
@@ -134,10 +134,10 @@ const EngineerDashboard = () => {
           {/* Stats */}
           <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Active Tickets', value: activeTickets.length, icon: <FolderKanban className="h-4 w-4" />, color: 'bg-blue-500/10 text-blue-400' },
-              { label: 'In Progress', value: myInProgress.length, icon: <Clock className="h-4 w-4" />, color: 'bg-amber-500/10 text-amber-400' },
-              { label: 'Completed', value: tickets.length - activeTickets.length, icon: <CheckCircle2 className="h-4 w-4" />, color: 'bg-green-500/10 text-green-400' },
-              { label: 'High Priority', value: activeTickets.filter((t: any) => t.priority === 'High').length, icon: <AlertCircle className="h-4 w-4" />, color: 'bg-red-500/10 text-red-400' },
+              { label: 'Active Tickets', value: activeTickets.length, icon: <FolderKanban className="h-4 w-4" />, color: 'bg-teal-500/10 text-teal-600' },
+              { label: 'In Progress', value: myInProgress.length, icon: <Clock className="h-4 w-4" />, color: 'bg-amber-500/10 text-amber-500' },
+              { label: 'Completed', value: tickets.length - activeTickets.length, icon: <CheckCircle2 className="h-4 w-4" />, color: 'bg-emerald-500/10 text-emerald-600' },
+              { label: 'High Priority', value: activeTickets.filter((t: any) => t.priority === 'High').length, icon: <AlertCircle className="h-4 w-4" />, color: 'bg-red-500/10 text-red-500' },
             ].map((stat) => (
               <div key={stat.label} className="rounded-xl border bg-card p-5 hover:shadow-md transition-shadow">
                 <div className="flex items-center justify-between mb-2">

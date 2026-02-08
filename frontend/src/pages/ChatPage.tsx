@@ -215,7 +215,7 @@ const ChatPage = () => {
       {/* ── Compact header bar ── */}
       <div className="flex items-center justify-between border-b border-border/60 bg-background/70 backdrop-blur-md px-5 py-2.5">
         <div className="flex items-center gap-2.5">
-          <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 shadow-sm">
+          <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 shadow-sm">
             <BrainCircuit className="h-4 w-4 text-white" />
             <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-emerald-400 ring-2 ring-background" />
           </div>
@@ -339,7 +339,7 @@ const ChatPage = () => {
               onClick={handleSend}
               disabled={!input.trim() || streaming}
               size="icon"
-              className="absolute bottom-1.5 right-1.5 h-8 w-8 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 shadow-sm hover:from-violet-500 hover:to-indigo-500 disabled:opacity-40"
+              className="absolute bottom-1.5 right-1.5 h-8 w-8 rounded-lg bg-gradient-to-r from-teal-600 to-emerald-600 shadow-sm hover:from-teal-500 hover:to-emerald-500 disabled:opacity-40"
             >
               {streaming ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -395,7 +395,7 @@ const MessageBubble = ({
       )}
     >
       {!isUser && (
-        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 shadow-sm">
+        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 shadow-sm">
           <Bot className="h-3.5 w-3.5 text-white" />
         </div>
       )}
@@ -405,8 +405,8 @@ const MessageBubble = ({
           className={cn(
             'text-sm leading-relaxed',
             isUser
-              ? 'rounded-2xl rounded-br-md bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-white shadow-sm max-w-[80%]'
-              : 'text-foreground prose prose-sm dark:prose-invert prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:bg-muted prose-pre:text-foreground prose-code:text-violet-400 prose-code:before:content-none prose-code:after:content-none max-w-none',
+              ? 'rounded-2xl rounded-br-md bg-gradient-to-r from-teal-600 to-emerald-600 px-4 py-2.5 text-white shadow-sm max-w-[80%]'
+              : 'text-foreground prose prose-sm dark:prose-invert prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:bg-muted prose-pre:text-foreground prose-code:text-teal-600 prose-code:before:content-none prose-code:after:content-none max-w-none',
           )}
         >
           {message.content ? (
@@ -419,16 +419,16 @@ const MessageBubble = ({
             isStreaming && (
               <span className="inline-flex items-center gap-2 text-muted-foreground">
                 <span className="flex gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce [animation-delay:0ms]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce [animation-delay:150ms]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-violet-500 animate-bounce [animation-delay:300ms]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-bounce [animation-delay:0ms]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-bounce [animation-delay:150ms]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-bounce [animation-delay:300ms]" />
                 </span>
                 Thinking…
               </span>
             )
           )}
           {isStreaming && message.content && (
-            <span className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-violet-500 rounded-full" />
+            <span className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-teal-500 rounded-full" />
           )}
         </div>
 
@@ -513,7 +513,7 @@ const EmptyState = ({ onSuggestion }: { onSuggestion: (q: string) => void }) => 
       icon: <BrainCircuit className="h-4 w-4" />,
       label: 'Sprint Planning',
       query: 'What should we prioritize this sprint? Consider deadlines, dependencies, and team capacity.',
-      color: 'from-violet-500/10 to-indigo-500/10 text-violet-400',
+      color: 'from-teal-500/10 to-emerald-500/10 text-teal-500',
     },
     {
       icon: <FolderKanban className="h-4 w-4" />,
@@ -537,7 +537,7 @@ const EmptyState = ({ onSuggestion }: { onSuggestion: (q: string) => void }) => 
       icon: <Shield className="h-4 w-4" />,
       label: 'Executive Summary',
       query: 'Generate an executive summary for the chairperson covering all teams, budgets, risks, and milestones.',
-      color: 'from-indigo-500/10 to-purple-500/10 text-indigo-400',
+      color: 'from-teal-500/10 to-cyan-500/10 text-teal-600',
     },
   ];
 
@@ -551,13 +551,13 @@ const EmptyState = ({ onSuggestion }: { onSuggestion: (q: string) => void }) => 
       >
         {/* Animated logo */}
         <div className="relative mx-auto mb-6 h-20 w-20">
-          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500/20 to-indigo-500/20 blur-xl animate-pulse" />
-          <div className="relative flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-lg">
+          <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-teal-500/20 to-emerald-500/20 blur-xl animate-pulse" />
+          <div className="relative flex h-full w-full items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-teal-600 shadow-lg">
             <BrainCircuit className="h-10 w-10 text-white" />
           </div>
         </div>
 
-        <h2 className="text-2xl font-bold bg-gradient-to-r from-violet-400 to-indigo-400 bg-clip-text text-transparent">
+        <h2 className="text-2xl font-bold bg-gradient-to-r from-teal-500 to-emerald-500 bg-clip-text text-transparent">
           AI Co-Pilot
         </h2>
         <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
@@ -569,7 +569,7 @@ const EmptyState = ({ onSuggestion }: { onSuggestion: (q: string) => void }) => 
         <div className="flex flex-wrap justify-center gap-1.5 mt-4 mb-6">
           {['Risk Analysis', 'Team Simulation', 'Budget Tracking', 'Dependency Mapping', 'Hiring Strategy', 'Sprint Analytics'].map(cap => (
             <span key={cap} className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-muted/30 px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
-              <Zap className="h-2.5 w-2.5 text-violet-400" />{cap}
+              <Zap className="h-2.5 w-2.5 text-teal-500" />{cap}
             </span>
           ))}
         </div>

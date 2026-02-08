@@ -20,8 +20,8 @@ const ROLE_CARDS: { key: RoleKey; label: string; subtitle: string; description: 
     subtitle: 'Development',
     description: 'Tickets, Kanban boards, sprint progress, and AI-powered code risk analysis.',
     icon: <Code2 className="h-6 w-6" />,
-    gradient: 'from-blue-500 to-cyan-500',
-    accent: 'blue',
+    gradient: 'from-teal-500 to-cyan-500',
+    accent: 'teal',
   },
   {
     key: 'hr',
@@ -38,8 +38,8 @@ const ROLE_CARDS: { key: RoleKey; label: string; subtitle: string; description: 
     subtitle: 'Executive Leadership',
     description: 'Risk dashboards, multi-agent opinions, strategic oversight, and decision authority.',
     icon: <ShieldCheck className="h-6 w-6" />,
-    gradient: 'from-violet-500 to-purple-500',
-    accent: 'violet',
+    gradient: 'from-teal-600 to-cyan-600',
+    accent: 'teal',
   },
   {
     key: 'finance',
@@ -76,10 +76,10 @@ const RoleSelector = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 relative overflow-hidden flex flex-col items-center justify-center p-6">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 relative overflow-hidden flex flex-col items-center justify-center p-6">
       {/* Background effects */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(124,58,237,0.08),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(59,130,246,0.06),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(20,184,166,0.1),transparent_50%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(13,148,136,0.08),transparent_50%)]" />
       <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]" />
 
       <motion.div
