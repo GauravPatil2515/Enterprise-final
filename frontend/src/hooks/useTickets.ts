@@ -1,4 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Ticket, TicketStatus, Priority } from '@/utils/mockData';
 import { useTeams } from '@/context/TeamsContext';
 import { api } from '@/services/api';
@@ -17,6 +18,7 @@ interface TicketFilters {
 
 export const useTickets = (options: UseTicketsOptions = {}) => {
   const { state, dispatch } = useTeams();
+  const queryClient = useQueryClient();
   const [filters, setFilters] = useState<TicketFilters>({
     search: '',
     status: 'all',
@@ -27,18 +29,18 @@ export const useTickets = (options: UseTicketsOptions = {}) => {
 
   const getTickets = useCallback((): Ticket[] => {
     const { teamId, projectId } = options;
-    
+
     if (teamId && projectId) {
       const team = state.teams.find(t => t.id === teamId);
       const project = team?.projects.find(p => p.id === projectId);
       return project?.tickets || [];
     }
-    
+
     if (teamId) {
       const team = state.teams.find(t => t.id === teamId);
       return team?.projects.flatMap(p => p.tickets) || [];
     }
-    
+
     return state.teams.flatMap(t => t.projects.flatMap(p => p.tickets));
   }, [state.teams, options]);
 
@@ -92,11 +94,13 @@ export const useTickets = (options: UseTicketsOptions = {}) => {
       });
 
       // Sync to backend
-      api.updateTicketStatus(ticketId, newStatus).catch((err) => {
+      api.updateTicketStatus(ticketId, newStatus).then(() => {
+        if (projectId) queryClient.invalidateQueries({ queryKey: ['risk-analysis', projectId] });
+      }).catch((err) => {
         import('sonner').then(({ toast }) => toast.error(`Status sync failed: ${err?.message || 'Unknown error'}`));
       });
     },
-    [dispatch, options]
+    [dispatch, options, queryClient]
   );
 
   const addTicket = useCallback(
@@ -111,11 +115,13 @@ export const useTickets = (options: UseTicketsOptions = {}) => {
       });
 
       // Sync to backend
-      api.createTicket(projectId, ticket).catch((err) => {
+      api.createTicket(projectId, ticket).then(() => {
+        queryClient.invalidateQueries({ queryKey: ['risk-analysis', projectId] });
+      }).catch((err) => {
         import('sonner').then(({ toast }) => toast.error(`Failed to create ticket: ${err?.message || 'Unknown error'}`));
       });
     },
-    [dispatch, options]
+    [dispatch, options, queryClient]
   );
 
   const updateTicket = useCallback(
@@ -130,11 +136,13 @@ export const useTickets = (options: UseTicketsOptions = {}) => {
       });
 
       // Sync to backend
-      api.updateTicket(ticket.id, ticket).catch((err) => {
+      api.updateTicket(ticket.id, ticket).then(() => {
+        if (projectId) queryClient.invalidateQueries({ queryKey: ['risk-analysis', projectId] });
+      }).catch((err) => {
         import('sonner').then(({ toast }) => toast.error(`Failed to update ticket: ${err?.message || 'Unknown error'}`));
       });
     },
-    [dispatch, options]
+    [dispatch, options, queryClient]
   );
 
   const deleteTicket = useCallback(
@@ -149,11 +157,13 @@ export const useTickets = (options: UseTicketsOptions = {}) => {
       });
 
       // Sync to backend
-      api.deleteTicket(ticketId).catch((err) => {
+      api.deleteTicket(ticketId).then(() => {
+        if (projectId) queryClient.invalidateQueries({ queryKey: ['risk-analysis', projectId] });
+      }).catch((err) => {
         import('sonner').then(({ toast }) => toast.error(`Failed to delete ticket: ${err?.message || 'Unknown error'}`));
       });
     },
-    [dispatch, options]
+    [dispatch, options, queryClient]
   );
 
   const toggleTicketSelection = useCallback((ticketId: string) => {

@@ -348,8 +348,9 @@ const ChatPage = () => {
               )}
             </Button>
           </div>
-          <p className="mt-1.5 text-center text-[10px] text-muted-foreground/70">
-            Multi-Model AI Router • Graph Agents • Intent Classification
+          <p className="mt-1.5 text-center text-[10px] text-muted-foreground/70 flex items-center justify-center gap-2">
+            <span className="flex h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            DeepSeek-V3 • Qwen 2.5 • Enterprise Graph
           </p>
         </div>
       </div>
@@ -375,6 +376,55 @@ const CopyButton = ({ text }: { text: string }) => {
   );
 };
 
+// ─── Thinking Component ─────────────────────────────────────────────────────
+
+const ThinkingProcess = () => {
+  const [step, setStep] = useState(0);
+  const steps = [
+    "Analyzing graph topology...",
+    "Querying DeepSeek-V3 reasoning engine...",
+    "Retrieving risk signals from Neo4j...",
+    "Synthesizing multi-agent consensus...",
+  ];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setStep((s) => (s + 1) % steps.length);
+    }, 1200);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      className="flex items-center gap-3 p-4 rounded-xl bg-muted/40 border border-border/50 max-w-md"
+    >
+      <div className="relative flex h-8 w-8 items-center justify-center">
+        <div className="absolute inset-0 rounded-full border-2 border-teal-500/20 border-t-teal-500 animate-spin" />
+        <BrainCircuit className="h-4 w-4 text-teal-500" />
+      </div>
+      <div className="flex flex-col gap-0.5">
+        <span className="text-xs font-semibold text-foreground">AI Co-Pilot is thinking</span>
+        <AnimatePresence mode="wait">
+          <motion.span
+            key={step}
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -5 }}
+            className="text-[10px] text-muted-foreground"
+          >
+            {steps[step]}
+          </motion.span>
+        </AnimatePresence>
+      </div>
+    </motion.div>
+  );
+};
+
+// ─── Message Bubble ─────────────────────────────────────────────────────────
+
 const MessageBubble = ({
   message,
   isStreaming,
@@ -383,77 +433,83 @@ const MessageBubble = ({
   isStreaming: boolean;
 }) => {
   const isUser = message.role === 'user';
+  const isThinking = isStreaming && !message.content;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
       className={cn(
-        'group flex gap-3 py-3 px-2 rounded-xl transition-colors',
-        isUser ? 'justify-end' : 'hover:bg-muted/30',
+        'group flex gap-4',
+        isUser ? 'flex-row-reverse' : 'flex-row'
       )}
     >
-      {!isUser && (
-        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 shadow-sm">
-          <Bot className="h-3.5 w-3.5 text-white" />
-        </div>
-      )}
+      {/* Avatar */}
+      <div className={cn(
+        "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg shadow-sm border",
+        isUser ? "bg-muted border-border" : "bg-gradient-to-br from-teal-600 to-emerald-600 border-transparent"
+      )}>
+        {isUser ? <User className="h-4 w-4 text-muted-foreground" /> : <Bot className="h-4 w-4 text-white" />}
+      </div>
 
-      <div className={cn('flex flex-col gap-1', isUser ? 'items-end' : 'items-start flex-1 min-w-0')}>
-        <div
-          className={cn(
-            'text-sm leading-relaxed',
+      {/* Content */}
+      <div className={cn("flex flex-col gap-2 max-w-[85%]", isUser ? "items-end" : "items-start")}>
+
+        {/* Thinking State */}
+        {isThinking && <ThinkingProcess />}
+
+        {/* Message Content */}
+        {message.content && (
+          <div className={cn(
+            "relative px-5 py-3.5 text-sm leading-relaxed shadow-sm",
             isUser
-              ? 'rounded-2xl rounded-br-md bg-gradient-to-r from-teal-600 to-emerald-600 px-4 py-2.5 text-white shadow-sm max-w-[80%]'
-              : 'text-foreground prose prose-sm dark:prose-invert prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0 prose-pre:bg-muted prose-pre:text-foreground prose-code:text-teal-600 prose-code:before:content-none prose-code:after:content-none max-w-none',
-          )}
-        >
-          {message.content ? (
-            isUser ? (
+              ? "bg-primary text-primary-foreground rounded-2xl rounded-tr-sm"
+              : "bg-card border border-border/50 text-card-foreground rounded-2xl rounded-tl-sm"
+          )}>
+            {isUser ? (
               message.content
             ) : (
-              <ReactMarkdown>{message.content}</ReactMarkdown>
-            )
-          ) : (
-            isStreaming && (
-              <span className="inline-flex items-center gap-2 text-muted-foreground">
-                <span className="flex gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-bounce [animation-delay:0ms]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-bounce [animation-delay:150ms]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-teal-500 animate-bounce [animation-delay:300ms]" />
-                </span>
-                Thinking…
-              </span>
-            )
-          )}
-          {isStreaming && message.content && (
-            <span className="ml-0.5 inline-block h-4 w-[2px] animate-pulse bg-teal-500 rounded-full" />
-          )}
-        </div>
-
-        {/* Copy button + meta badges for assistant messages */}
-        {!isUser && message.content && !isStreaming && (
-          <div className="flex items-center gap-2 flex-wrap">
-            <CopyButton text={message.content} />
-            {message.meta?.task_type && (
-              <ModelBadge taskType={message.meta.task_type} />
+              <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-normal prose-headings:font-semibold prose-a:text-teal-600">
+                <ReactMarkdown>{message.content}</ReactMarkdown>
+              </div>
             )}
-            {message.meta?.intent && (
-              <IntentBadge intent={message.meta.intent} />
+
+            {/* Streaming Cursor */}
+            {isStreaming && message.content && (
+              <span className="inline-block w-1.5 h-3.5 bg-teal-500 ml-1 animate-pulse align-middle" />
             )}
           </div>
         )}
-      </div>
 
-      {isUser && (
-        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted">
-          <User className="h-3.5 w-3.5 text-muted-foreground" />
-        </div>
-      )}
+        {/* Metadata Footer (AI Only) */}
+        {!isUser && !isThinking && message.content && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center gap-2 mt-1 px-1"
+          >
+            {message.meta?.intent && (
+              <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-muted-foreground/70 bg-muted/50 px-1.5 py-0.5 rounded-md border border-border/50">
+                <Zap className="h-3 w-3 text-amber-500" />
+                {message.meta.intent}
+              </span>
+            )}
+            {message.meta?.task_type && (
+              <span className="flex items-center gap-1 text-[10px] uppercase font-bold text-muted-foreground/70 bg-muted/50 px-1.5 py-0.5 rounded-md border border-border/50">
+                <BrainCircuit className="h-3 w-3 text-teal-500" />
+                {message.meta.task_type}
+              </span>
+            )}
+            <div className="grow" />
+            <CopyButton text={message.content} />
+          </motion.div>
+        )}
+      </div>
     </motion.div>
   );
 };
+
+
 
 const FollowUpSuggestions = ({ onSuggestion }: { onSuggestion: (q: string) => void }) => {
   const followUps = [
@@ -561,7 +617,7 @@ const EmptyState = ({ onSuggestion }: { onSuggestion: (q: string) => void }) => 
           AI Co-Pilot
         </h2>
         <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
-          Powered by a multi-agent AI pipeline with graph-backed analysis.
+          Powered by <strong>DeepSeek-V3</strong> & <strong>Qwen 2.5</strong> with graph-backed analysis.
           Ask complex questions about risks, team dynamics, budgets, hiring, or strategic decisions.
         </p>
 

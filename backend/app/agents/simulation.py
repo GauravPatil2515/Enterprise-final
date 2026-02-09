@@ -1,3 +1,4 @@
+import numpy as np
 import random
 from typing import List, Dict, Any, Tuple
 from .constraints import ConstraintAgent
@@ -13,8 +14,7 @@ MC_DISTRIBUTIONS = {
     "ACCEPT_DELAY":          {"rr_mean": 0.00, "rr_std": 0.02, "cp_mean": 0.00, "cp_std": 0.01},
 }
 
-N_SIMULATIONS = 200  # Number of Monte Carlo trials per action
-
+N_SIMULATIONS = 1000  # Increased for NumPy performance
 
 class SimulationAgent:
     """
@@ -28,7 +28,7 @@ class SimulationAgent:
 
     def _monte_carlo(self, action: str, context: Dict[str, Any]) -> Dict[str, float]:
         """
-        Run N_SIMULATIONS trials for one action.
+        Run N_SIMULATIONS trials for one action using Vectorized NumPy.
         Returns: mean_rr, p5_rr, p95_rr, mean_cp, prob_positive
         """
         dist = MC_DISTRIBUTIONS.get(action, {"rr_mean": 0, "rr_std": 0.05, "cp_mean": 0, "cp_std": 0.02})
@@ -37,34 +37,53 @@ class SimulationAgent:
         cp_mean = dist["cp_mean"]
         cp_std = dist["cp_std"]
 
-        # Context-specific boosts
+        # ── Context-Aware Adjustments (The "Real Intelligence" Part) ──
+        
+        # Signal 1: Dependency Depth
+        # If dependency chain is deep, adding engineers is LESS effective (Brooks' Law / coordination overhead)
+        dep_depth = context.get("signals", {}).get("dependency_depth", 0)
+        if dep_depth > 2 and action == "ADD_ENGINEER":
+             rr_mean *= 0.7  # 30% penalty
+             cp_mean *= 1.2  # 20% cost increase (onboarding)
+             
+        # Signal 2: Contention Score
+        # If team is overloaded, reducing scope is MORE effective
+        contention = context.get("signals", {}).get("contention_score", 0)
+        if contention > 3 and action == "REDUCE_SCOPE":
+            rr_mean *= 1.2   # 20% boost
+            
+        # Signal 3: Skill Match
+        # If skills are missing, adding an engineer (presumably with skills) is highly effective
+        skill_score = context.get("signals", {}).get("skill_match_score", 1.0)
+        if skill_score < 0.8 and action == "ADD_ENGINEER":
+            rr_mean *= 1.3   # 30% boost
+
+        # Hard constraints from legacy context
         if action == "ESCALATE_DEPENDENCY" and context.get("is_blocked"):
-            rr_mean = 0.50  # Higher mean when actually blocked
-
+            rr_mean = 0.55  # Higher mean when actually blocked
+        
         if action == "ADD_ENGINEER" and context.get("days_to_deadline", 30) < 7:
-            rr_mean *= 0.5  # Adding engineers late is less effective
-            cp_mean *= 1.5
+            rr_mean *= 0.4  # Adding engineers late is barely effective
+            cp_mean *= 1.8  # And very expensive
 
-        rr_samples = []
-        cp_samples = []
-        net_samples = []
+        # ── Vectorized Simulation ──
+        # Generate N samples at once
+        rr_samples = np.random.normal(loc=rr_mean, scale=rr_std, size=N_SIMULATIONS)
+        cp_samples = np.random.normal(loc=cp_mean, scale=cp_std, size=N_SIMULATIONS)
+        
+        # Clip to [0, 1]
+        rr_samples = np.clip(rr_samples, 0.0, 1.0)
+        cp_samples = np.clip(cp_samples, 0.0, 1.0)
+        
+        net_samples = rr_samples - cp_samples
 
-        for _ in range(N_SIMULATIONS):
-            rr = max(0.0, min(1.0, random.gauss(rr_mean, rr_std)))
-            cp = max(0.0, min(1.0, random.gauss(cp_mean, cp_std)))
-            rr_samples.append(rr)
-            cp_samples.append(cp)
-            net_samples.append(rr - cp)
-
-        rr_samples.sort()
-        net_samples.sort()
-
+        # Calculate statistics
         return {
-            "mean_rr": sum(rr_samples) / N_SIMULATIONS,
-            "p5_rr": rr_samples[int(N_SIMULATIONS * 0.05)],
-            "p95_rr": rr_samples[int(N_SIMULATIONS * 0.95)],
-            "mean_cp": sum(cp_samples) / N_SIMULATIONS,
-            "prob_positive": sum(1 for n in net_samples if n > 0.05) / N_SIMULATIONS,
+            "mean_rr": float(np.mean(rr_samples)),
+            "p5_rr": float(np.percentile(rr_samples, 5)),
+            "p95_rr": float(np.percentile(rr_samples, 95)),
+            "mean_cp": float(np.mean(cp_samples)),
+            "prob_positive": float(np.sum(net_samples > 0.05) / N_SIMULATIONS),
         }
 
     def simulate_interventions(self, risk_score: float, context: Dict[str, Any]) -> List[str]:
@@ -90,7 +109,7 @@ class SimulationAgent:
 
             if net_benefit > 0.05 and mc["prob_positive"] > 0.5:
                 msg = action.replace("_", " ").title()
-                msg += f" (risk ↓{mc['mean_rr']:.0%}, {mc['prob_positive']:.0%} chance of positive outcome)"
+                msg += f" (risk ↓{mc['mean_rr']:.0%}, {mc['prob_positive']:.0%} conf)"
                 if constraint_result.get("reason") and constraint_result["penalty"] > 0:
                     msg += f" — Note: {constraint_result['reason']}"
                 recommendations.append((net_benefit, msg))
@@ -138,14 +157,14 @@ class SimulationAgent:
                 reason = constraint_result["reason"]
             elif recommended:
                 reason = (
-                    f"Monte Carlo: {mc['mean_rr']:.0%} avg risk reduction "
-                    f"(95% CI: {mc['p5_rr']:.0%}–{mc['p95_rr']:.0%}), "
-                    f"{mc['prob_positive']:.0%} chance of net positive"
+                    f"Monte Carlo ({N_SIMULATIONS} runs): {mc['mean_rr']:.0%} avg reduction "
+                    f"[{mc['p5_rr']:.0%}-{mc['p95_rr']:.0%}], "
+                    f"{mc['prob_positive']:.0%} prob of success."
                 )
             else:
                 reason = (
                     f"Low expected benefit ({net_benefit:.2f}), "
-                    f"only {mc['prob_positive']:.0%} chance of positive outcome"
+                    f"only {mc['prob_positive']:.0%} chance of success"
                 )
 
             comparisons.append(DecisionComparison(
@@ -160,7 +179,7 @@ class SimulationAgent:
             if recommended:
                 evidence.append(
                     f"{action.replace('_', ' ').title()}: "
-                    f"{mc['mean_rr']:.0%} ↓risk ({mc['prob_positive']:.0%} confidence)"
+                    f"{mc['mean_rr']:.0%} ↓risk (P95: {mc['p95_rr']:.0%})"
                 )
 
         comparisons.sort(key=lambda x: (x.recommended, x.risk_reduction), reverse=True)
@@ -168,22 +187,22 @@ class SimulationAgent:
         recommended_count = sum(1 for c in comparisons if c.recommended)
 
         if recommended_count == 0:
-            claim = "No viable interventions given current constraints"
+            claim = "No viable interventions found by simulation."
             confidence = 0.8
         elif recommended_count == 1:
             best = next(c for c in comparisons if c.recommended)
-            claim = f"Best option: {best.action} ({best.reason})"
+            claim = f"Simulation recommends: {best.action}."
             confidence = 0.85
         else:
             best = comparisons[0]
-            claim = f"Recommended: {best.action} — Monte Carlo confirms highest expected payoff"
-            confidence = 0.80
+            claim = f"Simulation confirms {best.action} as optimal strategy."
+            confidence = 0.88
 
         opinion = AgentOpinion(
             agent="SimulationAgent",
             claim=claim,
             confidence=confidence,
-            evidence=evidence if evidence else ["All interventions blocked by constraints"],
+            evidence=evidence if evidence else ["Constraints block all options"],
         )
 
         return comparisons, opinion

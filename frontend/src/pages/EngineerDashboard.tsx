@@ -13,7 +13,15 @@ import {
   AlertCircle,
   ArrowUpRight,
   Loader2,
+  MoreHorizontal,
 } from 'lucide-react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { api, type DashboardData } from '@/services/api';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
@@ -49,7 +57,7 @@ const EngineerDashboard = () => {
   const projects = (data?.projects || []).map((p: any, idx: number) => ({
     ...p,
     teamId: p.team_id || p.teamId || `t${idx + 1}`,
-    teamName: p.team || 'Unknown',
+    teamName: p.team || 'Engineering', // Fallback for unknown team names
   }));
   const tickets = projects.flatMap((p: any) => p.tickets || []);
   const activeTickets = tickets.filter((t: any) => t.status !== 'Done');
@@ -169,16 +177,49 @@ const EngineerDashboard = () => {
               </div>
               <div className="space-y-2">
                 {col.tickets.slice(0, 5).map((tk: any) => (
-                  <div key={tk.id} className="rounded-lg border bg-card p-2.5 text-sm">
-                    <p className="font-medium truncate">{tk.title}</p>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-muted-foreground">{tk.id}</span>
-                      <span className={cn('text-xs font-medium', priorityColors[tk.priority])}>{tk.priority}</span>
+                  <div key={tk.id} className="rounded-lg border bg-card p-2.5 text-sm group hover:shadow-md transition-shadow">
+                    <p className="font-medium truncate mb-1.5">{tk.title}</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <Select
+                        defaultValue={tk.status}
+                        onValueChange={(newStatus) => {
+                          // Optimistic update
+                          const updatedTickets = tickets.map((t: any) =>
+                            t.id === tk.id ? { ...t, status: newStatus } : t
+                          );
+                          // Re-derive state from updated tickets (simplified for this view)
+                          // In a real app we'd update 'data' state deeply. 
+                          // For now, we'll just trigger the API call and toast.
+                          api.updateTicketStatus(tk.id, newStatus)
+                            .then(() => {
+                              toast.success(`Ticket moved to ${newStatus}`);
+                              // Reload data to reflect changes fully
+                              api.getDashboardData('engineer').then(setData);
+                            })
+                            .catch(() => toast.error('Failed to update status'));
+                        }}
+                      >
+                        <SelectTrigger className="h-6 text-[10px] px-2 min-w-[80px] bg-muted/50 border-transparent hover:border-border hover:bg-background">
+                          <SelectValue placeholder={tk.status} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="To Do">To Do</SelectItem>
+                          <SelectItem value="In Progress">In Progress</SelectItem>
+                          <SelectItem value="Review">Review</SelectItem>
+                          <SelectItem value="Done">Done</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <span className={cn('text-[10px] font-bold px-1.5 py-0.5 rounded',
+                        priorityColors[tk.priority] || 'text-muted-foreground'
+                      )}>
+                        {tk.priority}
+                      </span>
                     </div>
                   </div>
                 ))}
                 {col.tickets.length > 5 && (
-                  <p className="text-xs text-muted-foreground text-center">+{col.tickets.length - 5} more</p>
+                  <p className="text-xs text-muted-foreground text-center pt-1">+{col.tickets.length - 5} more</p>
                 )}
               </div>
             </div>

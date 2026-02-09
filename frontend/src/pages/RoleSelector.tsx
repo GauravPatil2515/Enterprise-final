@@ -13,14 +13,14 @@ import {
   ArrowRight,
 } from 'lucide-react';
 
-const ROLE_CARDS: { key: RoleKey; label: string; subtitle: string; description: string; icon: React.ReactNode; gradient: string; accent: string }[] = [
+const ROLE_CARDS: { key: RoleKey; label: string; subtitle: string; description: string; icon: React.ReactNode; color: string; accent: string }[] = [
   {
     key: 'engineer',
     label: 'Engineer',
     subtitle: 'Development',
     description: 'Tickets, Kanban boards, sprint progress, and AI-powered code risk analysis.',
     icon: <Code2 className="h-6 w-6" />,
-    gradient: 'from-teal-500 to-cyan-500',
+    color: 'bg-teal-600',
     accent: 'teal',
   },
   {
@@ -29,7 +29,7 @@ const ROLE_CARDS: { key: RoleKey; label: string; subtitle: string; description: 
     subtitle: 'People Operations',
     description: 'Team workload distribution, member allocation, well-being metrics, and hiring signals.',
     icon: <Users className="h-6 w-6" />,
-    gradient: 'from-emerald-500 to-teal-500',
+    color: 'bg-emerald-600',
     accent: 'emerald',
   },
   {
@@ -38,8 +38,8 @@ const ROLE_CARDS: { key: RoleKey; label: string; subtitle: string; description: 
     subtitle: 'Executive Leadership',
     description: 'Risk dashboards, multi-agent opinions, strategic oversight, and decision authority.',
     icon: <ShieldCheck className="h-6 w-6" />,
-    gradient: 'from-teal-600 to-cyan-600',
-    accent: 'teal',
+    color: 'bg-violet-600',
+    accent: 'violet',
   },
   {
     key: 'finance',
@@ -47,7 +47,7 @@ const ROLE_CARDS: { key: RoleKey; label: string; subtitle: string; description: 
     subtitle: 'Financial Strategy',
     description: 'Cost analysis, intervention budgets, resource utilization, and ROI projections.',
     icon: <DollarSign className="h-6 w-6" />,
-    gradient: 'from-amber-500 to-orange-500',
+    color: 'bg-amber-600',
     accent: 'amber',
   },
 ];
@@ -62,7 +62,7 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: 'easeOut' as const } },
 };
 
 const RoleSelector = () => {
@@ -76,12 +76,7 @@ const RoleSelector = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-teal-900 relative overflow-hidden flex flex-col items-center justify-center p-6">
-      {/* Background effects */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(20,184,166,0.1),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(13,148,136,0.08),transparent_50%)]" />
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:64px_64px]" />
-
+    <div className="min-h-screen bg-slate-50 relative overflow-hidden flex flex-col items-center justify-center p-6">
       <motion.div
         variants={containerVariants}
         initial="hidden"
@@ -89,14 +84,14 @@ const RoleSelector = () => {
         className="relative z-10 w-full max-w-5xl"
       >
         <motion.div variants={itemVariants} className="text-center mb-14">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-[11px] font-medium text-slate-400 uppercase tracking-wider mb-6">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white border border-slate-200 text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-6 shadow-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
             Select Your Role
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4 tracking-tight">
+          <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-4 tracking-tight">
             Decision Intelligence
           </h1>
-          <p className="text-slate-400 text-base max-w-lg mx-auto leading-relaxed">
+          <p className="text-slate-500 text-base max-w-lg mx-auto leading-relaxed">
             Choose your perspective. Each role provides a uniquely tailored
             view of the same graph-powered intelligence layer.
           </p>
@@ -110,32 +105,29 @@ const RoleSelector = () => {
               onClick={() => handleSelect(role.key)}
               whileHover={{ y: -4 }}
               whileTap={{ scale: 0.98 }}
-              className="group relative rounded-2xl border border-white/[0.06] bg-white/[0.03] backdrop-blur-sm p-6 text-left transition-all duration-300 hover:border-white/15 hover:bg-white/[0.06] focus:outline-none focus:ring-2 focus:ring-white/20"
+              className="group relative rounded-2xl border border-border bg-white p-6 text-left transition-all duration-300 hover:shadow-xl hover:shadow-slate-200/50 hover:border-primary/20 focus:outline-none focus:ring-2 focus:ring-primary/20"
             >
-              {/* Hover glow */}
-              <div className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${role.gradient} opacity-0 group-hover:opacity-[0.04] transition-opacity duration-300`} />
-
               <div className="relative">
                 <div
-                  className={`inline-flex items-center justify-center rounded-xl bg-gradient-to-br ${role.gradient} p-2.5 text-white mb-5 shadow-lg`}
+                  className={`inline-flex items-center justify-center rounded-xl ${role.color} p-2.5 text-white mb-5 shadow-md`}
                 >
                   {role.icon}
                 </div>
 
-                <p className="text-[10px] font-medium text-slate-500 uppercase tracking-wider mb-1">{role.subtitle}</p>
-                <h2 className="text-lg font-semibold text-white mb-2">{role.label}</h2>
-                <p className="text-[13px] text-slate-400 leading-relaxed mb-5">{role.description}</p>
+                <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-1">{role.subtitle}</p>
+                <h2 className="text-lg font-semibold text-slate-900 mb-2">{role.label}</h2>
+                <p className="text-[13px] text-slate-500 leading-relaxed mb-5">{role.description}</p>
 
-                <div className="flex items-center gap-1.5 text-xs font-medium text-slate-500 group-hover:text-white/80 transition-colors">
-                  <span>Enter</span>
-                  <ArrowRight className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
+                <div className="flex items-center gap-1.5 text-xs font-medium text-primary group-hover:translate-x-1 transition-transform">
+                  <span>Enter Dashboard</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </div>
               </div>
             </motion.button>
           ))}
         </div>
 
-        <motion.p variants={itemVariants} className="mt-14 text-center text-[11px] text-slate-600 tracking-wider uppercase">
+        <motion.p variants={itemVariants} className="mt-14 text-center text-[11px] text-slate-400 tracking-wider uppercase">
           Graph  /  Agents  /  LLM  /  Human-in-the-Loop
         </motion.p>
       </motion.div>

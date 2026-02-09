@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 interface NavbarProps {
@@ -118,103 +119,138 @@ export const Navbar = ({ onMenuClick, onSearch }: NavbarProps) => {
   };
 
   return (
-    <header className="fixed left-0 right-0 top-0 z-20 flex h-14 items-center justify-between border-b border-border bg-card/95 backdrop-blur-sm px-4 md:left-64">
-      <div className="flex items-center gap-4">
+    <header className="fixed left-0 right-0 top-0 z-30 flex h-14 items-center justify-between border-b border-border/40 bg-background/60 backdrop-blur-md px-6 md:left-64 shadow-[0_1px_2px_rgba(0,0,0,0.02)]">
+      <div className="flex items-center gap-6">
         <SidebarTrigger onClick={onMenuClick} />
-        
+
         {/* Search with live results */}
-        <div ref={searchRef} className="relative hidden sm:block">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <div ref={searchRef} className="relative hidden lg:block group">
+          <Search className="absolute left-3.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/70 group-focus-within:text-primary transition-colors" />
           <Input
             type="text"
             placeholder="Search issues, projects..."
             value={searchQuery}
             onChange={handleSearch}
             onFocus={() => searchResults.length > 0 && setShowResults(true)}
-            className="w-64 pl-9 lg:w-80 h-9"
+            className="w-72 pl-10 pr-12 lg:w-96 h-9 bg-background/40 border-border/40 focus-visible:ring-1 focus-visible:ring-primary/20 focus-visible:border-primary/30 transition-all rounded-lg text-sm"
           />
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 px-1.5 py-0.5 rounded border border-border/50 bg-muted/30 pointer-events-none opacity-60 group-focus-within:opacity-0 transition-opacity">
+            <span className="text-[10px] font-medium font-sans">⌘</span>
+            <span className="text-[10px] font-medium font-sans">K</span>
+          </div>
+
           {showResults && (
-            <div className="absolute top-full left-0 right-0 mt-1 rounded-xl border bg-card shadow-xl z-50 overflow-hidden">
-              {searchResults.map((r, i) => (
-                <button
-                  key={`${r.type}-${r.id}-${i}`}
-                  onClick={() => handleResultClick(r.link)}
-                  className="flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm hover:bg-muted/50 transition-colors"
-                >
-                  {resultIcons[r.type]}
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{r.name}</p>
-                    <p className="text-[10px] text-muted-foreground truncate">{r.subtitle}</p>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground capitalize">{r.type}</span>
-                </button>
-              ))}
+            <div className="absolute top-[calc(100%+8px)] left-0 right-0 p-1.5 rounded-xl border border-border/50 bg-popover/95 backdrop-blur-xl shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              <div className="px-2 py-1.5 text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wider uppercase tracking-widest">
+                Search Results
+              </div>
+              <div className="space-y-0.5">
+                {searchResults.map((r, i) => (
+                  <button
+                    key={`${r.type}-${r.id}-${i}`}
+                    onClick={() => handleResultClick(r.link)}
+                    className="flex w-full items-center gap-3 px-2.5 py-2 text-left text-sm rounded-lg hover:bg-accent/50 transition-all group"
+                  >
+                    <div className="flex h-7 w-7 items-center justify-center rounded-md border border-border/40 bg-background/50 group-hover:scale-105 transition-transform">
+                      {resultIcons[r.type]}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm truncate">{r.name}</p>
+                      <p className="text-[10px] text-muted-foreground/70 truncate">{r.subtitle}</p>
+                    </div>
+                    <Badge variant="outline" className="text-[9px] h-4.5 font-normal border-border/40 bg-muted/20 text-muted-foreground/80 px-1.5">
+                      {r.type}
+                    </Badge>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
         {/* Role Badge */}
-        <RoleBadge />
+        <div className="hidden sm:block">
+          <RoleBadge />
+        </div>
 
-        {/* Create Button — wired to real actions */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button size="sm" className="gap-1 h-8">
-              <Plus className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Create</span>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem onClick={handleCreateTicket}>
-              <Ticket className="h-4 w-4 mr-2" /> New Ticket
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/teams')}>
-              <FolderKanban className="h-4 w-4 mr-2" /> View Projects
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/teams')}>
-              <UsersIcon className="h-4 w-4 mr-2" /> View Teams
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="h-4 w-px bg-border/40 mx-1 hidden sm:block" />
 
-        {/* User Menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="rounded-full h-8 w-8">
-              <Avatar className="h-7 w-7">
-                <AvatarImage src={avatarUrl} alt={displayName} />
-                <AvatarFallback className="text-xs">{displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
-              </Avatar>
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <div className="flex items-center gap-3 p-3">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={avatarUrl} alt={displayName} />
-                <AvatarFallback>{displayName.slice(0, 2).toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <div>
-                <p className="text-sm font-medium">{displayName}</p>
-                <p className="text-xs text-muted-foreground">{displayEmail}</p>
+        {/* Action Buttons */}
+        <div className="flex items-center gap-1.5">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="sm" variant="outline" className="h-8 gap-1.5 rounded-lg border-border/40 bg-background/50 hover:bg-accent/50 shadow-none font-medium">
+                <Plus className="h-3.5 w-3.5 text-primary" />
+                <span className="hidden xl:inline">Draft</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52 rounded-xl border-border/40 p-1 bg-popover/95 backdrop-blur-md">
+              <DropdownMenuItem onClick={handleCreateTicket} className="rounded-lg gap-2.5 py-2 cursor-pointer">
+                <div className="p-1 rounded bg-amber-500/10 text-amber-500">
+                  <Ticket className="h-3.5 w-3.5" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">New Ticket</span>
+                  <span className="text-[10px] text-muted-foreground">Log a bug or task</span>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/teams')} className="rounded-lg gap-2.5 py-2 cursor-pointer">
+                <div className="p-1 rounded bg-blue-500/10 text-blue-500">
+                  <FolderKanban className="h-3.5 w-3.5" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-medium">View Projects</span>
+                  <span className="text-[10px] text-muted-foreground">See all initiatives</span>
+                </div>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* User Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" className="rounded-full h-8 w-8 hover:bg-accent/50 p-0 ring-1 ring-border/20 transition-all border border-border/10">
+                <Avatar className="h-7 w-7 pointer-events-none">
+                  <AvatarImage src={avatarUrl} alt={displayName} />
+                  <AvatarFallback className="bg-primary/10 text-primary text-[10px] font-bold">
+                    {displayName.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-64 rounded-xl border-border/40 p-1.5 bg-popover/95 backdrop-blur-md shadow-2xl">
+              <div className="flex items-center gap-3 p-2.5 mb-1 bg-muted/30 rounded-lg border border-border/5">
+                <Avatar className="h-10 w-10 ring-2 ring-primary/5">
+                  <AvatarImage src={avatarUrl} alt={displayName} />
+                  <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold">
+                    {displayName.slice(0, 2).toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0">
+                  <p className="text-sm font-semibold truncate leading-none mb-1">{displayName}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">{displayEmail}</p>
+                </div>
               </div>
-            </div>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link to="/select-role" className="flex items-center gap-2 cursor-pointer">
-                <User className="h-4 w-4" /> Switch Role
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={handleLogout}
-              className="text-destructive focus:text-destructive cursor-pointer"
-            >
-              <LogOut className="h-4 w-4 mr-2" /> Log out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuSeparator className="bg-border/30 mx-1" />
+              <DropdownMenuItem asChild>
+                <Link to="/select-role" className="flex items-center gap-3 py-2 px-2.5 rounded-lg cursor-pointer hover:bg-accent/50 group transition-colors">
+                  <User className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+                  <span className="text-sm font-medium">Profile Settings</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator className="bg-border/30 mx-1" />
+              <DropdownMenuItem
+                onClick={handleLogout}
+                className="flex items-center gap-3 py-2 px-2.5 rounded-lg text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer group"
+              >
+                <LogOut className="h-4 w-4 opacity-70 group-hover:opacity-100 transition-opacity" />
+                <span className="text-sm font-medium">Sign Out</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   );

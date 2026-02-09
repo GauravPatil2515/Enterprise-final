@@ -36,6 +36,7 @@ class AnalysisResult(BaseModel):
     recommended_actions: List[str]  # Legacy action list
     agent_opinions: List[AgentOpinion] = Field(default_factory=list)
     decision_comparison: List[DecisionComparison] = Field(default_factory=list)
+    debate_log: List[dict] = Field(default_factory=list) # Phase 2: Structured debate turns
 
 
 # ── Role-Based Access Models ──

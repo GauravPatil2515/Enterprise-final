@@ -19,6 +19,7 @@ from ..core.constants import (
     BLOCKER_CRITICAL_DAYS,
     get_risk_level
 )
+from ..core.graph_signals import signal_extractor
 import logging
 
 logger = logging.getLogger(__name__)
@@ -86,22 +87,22 @@ class DeliveryRiskAgent:
         if blocked_tickets:
             tk = blocked_tickets[0]
             parts.append(
-                f"**Primary Risk**: \"{tk.get('title', 'Unknown')}\" is blocked by "
-                f"\"{tk.get('blocker_title', 'an upstream dependency')}\" "
+                f"**Primary Risk**: [\"{tk.get('title', 'Unknown')}\"]({tk.get('id')}) is blocked by "
+                f"[\"{tk.get('blocker_title', 'an upstream dependency')}\"]({tk.get('blocker_id')}) "
                 f"(status: {tk.get('blocker_status', 'In Progress')}). "
                 f"This creates a critical dependency chain affecting downstream work."
             )
         elif overdue_tickets:
             tk = overdue_tickets[0]
             parts.append(
-                f"**Primary Risk**: \"{tk.get('title', 'Unknown')}\" is overdue "
+                f"**Primary Risk**: [\"{tk.get('title', 'Unknown')}\"]({tk.get('id')}) is overdue "
                 f"(due: {tk.get('dueDate', 'unknown')}). "
                 f"This indicates timeline pressure and potential cascading delays."
             )
         elif near_deadline_tickets:
             tk = near_deadline_tickets[0]
             parts.append(
-                f"**Primary Risk**: \"{tk.get('title', 'Unknown')}\" is due in {days_to_deadline} days "
+                f"**Primary Risk**: [\"{tk.get('title', 'Unknown')}\"]({tk.get('id')}) is due in {days_to_deadline} days "
                 f"and may require acceleration to meet the deadline."
             )
         else:
@@ -138,7 +139,7 @@ class DeliveryRiskAgent:
         
         return " ".join(parts)
 
-    def analyze(self, project_id: str) -> AnalysisResult:
+    def analyze(self, project_id: str, signals: Dict[str, Any] = None) -> AnalysisResult:
         """
         Deterministic risk analysis from real Neo4j data.
         Rules:
@@ -244,11 +245,15 @@ class DeliveryRiskAgent:
         max_load = max(assignee_counts.values()) if assignee_counts else 0
         capacity_pct = min(int((max_load / max(total_active, 1)) * 200), 150)
 
+        if not signals:
+             signals = signal_extractor.get_signals(project_id)
+
         sim_context = {
             "is_blocked": len(blocked_tickets) > 0,
             "days_to_deadline": max(days_to_deadline, 1),
             "blocker": blocked_tickets[0].get("blocker_id") if blocked_tickets else None,
             "team_capacity_percent": capacity_pct,
+            "signals": signals  # Inject graph signals for Real Monte Carlo
         }
 
         # ── Agent opinions ──
@@ -286,7 +291,7 @@ class DeliveryRiskAgent:
         primary_reason = "No significant risks detected — all tickets are on track."
         if reasons:
             try:
-                from ..core.llm import llm_client
+                from ..core.model_router import model_router, TaskType
 
                 agent_summary = "\n".join([
                     f"- {op.agent}: {op.claim} (confidence: {op.confidence:.0%})"
@@ -321,8 +326,11 @@ Task: Provide a 3-sentence analysis:
 2. COUNTERFACTUAL: State what happens if NO action is taken (e.g. "If we do nothing, delivery will slip by X days because ...").
 3. CONTRAST the top two interventions from the Decision Comparison Table — explain which one is better and WHY (e.g. cost vs. risk-reduction trade-off).
 Do NOT introduce new facts. Only use the evidence above.
+CRITICAL: When referencing tickets, use the format [Ticket-ID] (e.g. [TKT-123]). Do NOT use quotes or plain IDs.
 """
-                primary_reason = llm_client.generate_reasoning(prompt)
+                # Use model_router for generation
+                messages = [{"role": "user", "content": prompt}]
+                primary_reason = model_router.generate(TaskType.EXPLANATION, messages)
             except Exception as e:
                 logger.warning(f"LLM reasoning failed: {e}")
                 # Structured fallback: Generate detailed reasoning from deterministic data

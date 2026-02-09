@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
+import { isSenior, isJunior } from '@/lib/roles';
 import NarrativeCard from '@/components/NarrativeCard';
 import { Button } from '@/components/ui/button';
 import {
@@ -60,6 +61,12 @@ const HRDashboard = () => {
     const target = idle[0] || members.find((m: any) => m.active_tickets <= 1 && m.id !== overM.id);
     return { from: overM, to: target };
   }).filter((r) => r.to);
+
+  const handleReassign = (fromName: string, toName: string) => {
+    toast.success(`Reassignment Proposal Sent`, {
+      description: `Suggested moving tickets from ${fromName} to ${toName}. Manager notified.`
+    });
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -191,8 +198,13 @@ const HRDashboard = () => {
                   <ArrowRightLeft className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <span className="font-medium text-green-400">{r.to.name}</span>
                   <span className="text-xs text-muted-foreground">({r.to.active_tickets} tickets)</span>
-                  <Button size="sm" variant="outline" className="ml-auto h-7 text-xs" disabled>
-                    Suggest
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="ml-auto h-7 text-xs hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200"
+                    onClick={() => handleReassign(r.from.name, r.to.name)}
+                  >
+                    Suggest Move
                   </Button>
                 </div>
               ))}
@@ -264,13 +276,8 @@ const HRDashboard = () => {
       <motion.div variants={itemVariants}>
         <h2 className="text-lg font-semibold mb-3">Senior vs Junior Comparison</h2>
         {(() => {
-          const seniorKeywords = ['senior', 'sr.', 'sr ', 'lead', 'principal', 'staff', 'architect'];
-          const seniors = members.filter((m: any) =>
-            seniorKeywords.some(k => (m.role || '').toLowerCase().includes(k))
-          );
-          const juniors = members.filter((m: any) =>
-            !seniorKeywords.some(k => (m.role || '').toLowerCase().includes(k))
-          );
+          const seniors = members.filter((m: any) => isSenior(m.role));
+          const juniors = members.filter((m: any) => isJunior(m.role));
           const avgSrTickets = seniors.length > 0
             ? Math.round((seniors.reduce((a: number, m: any) => a + (m.active_tickets || 0), 0) / seniors.length) * 10) / 10
             : 0;

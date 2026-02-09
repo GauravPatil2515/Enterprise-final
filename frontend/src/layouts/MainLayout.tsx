@@ -2,6 +2,7 @@ import { useState, useEffect, Component, type ReactNode } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar } from '@/components/Sidebar';
 import { Navbar } from '@/components/Navbar';
+import { LiveTicker } from '@/components/LiveTicker';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 /* ── Error Boundary ────────────────────────────────────── */
@@ -41,6 +42,8 @@ class ErrorBoundary extends Component<EBProps, EBState> {
   }
 }
 
+import { Breadcrumbs } from '@/components/Breadcrumbs';
+
 /* ── Main Layout ───────────────────────────────────────── */
 export const MainLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -54,22 +57,33 @@ export const MainLayout = () => {
   // Full-bleed pages that shouldn't have container padding
   const fullBleed = ['/graph', '/chat', '/simulator'].includes(location.pathname);
 
+  // Pages where breadcrumbs are distracting
+  const hideBreadcrumbs = ['/dashboard', '/graph', '/chat', '/simulator', '/'].includes(location.pathname);
+
   return (
     <div className="min-h-screen bg-background">
+      {/* 🚧 PHASE 0: HONESTY BANNER 🚧 */}
+      <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 text-center text-xs font-medium text-amber-600 flex items-center justify-center gap-2">
+        <span>⚠️</span>
+        <span>**HEADS UP:** Some AI features are currently being upgraded for real-time accuracy & grounding. Demo mode active.</span>
+      </div>
+
       <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <Navbar onMenuClick={() => setSidebarOpen(true)} />
-      
-      <main className="min-h-screen pt-14 md:ml-64">
+
+      <main className="min-h-screen pt-14 pb-8 md:ml-64">
         <ErrorBoundary>
           {fullBleed ? (
             <Outlet />
           ) : (
             <div className="p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto">
+              {!hideBreadcrumbs && <Breadcrumbs />}
               <Outlet />
             </div>
           )}
         </ErrorBoundary>
       </main>
+      <LiveTicker />
     </div>
   );
 };

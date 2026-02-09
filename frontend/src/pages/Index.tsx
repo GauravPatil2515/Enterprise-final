@@ -150,11 +150,11 @@ const features = [
   },
 ];
 
-const roles: { key: RoleKey; label: string; desc: string; icon: React.ReactNode; gradient: string }[] = [
-  { key: 'engineer', label: 'Engineer', desc: 'Sprint health & blockers', icon: <Code2 className="h-6 w-6" />, gradient: 'from-blue-500 to-blue-600' },
-  { key: 'hr', label: 'HR Manager', desc: 'Workforce & workload', icon: <Users className="h-6 w-6" />, gradient: 'from-emerald-500 to-emerald-600' },
-  { key: 'chairperson', label: 'Chairperson', desc: 'Company-wide analysis', icon: <ShieldCheck className="h-6 w-6" />, gradient: 'from-violet-500 to-violet-600' },
-  { key: 'finance', label: 'Finance', desc: 'ROI & cost analysis', icon: <DollarSign className="h-6 w-6" />, gradient: 'from-amber-500 to-amber-600' },
+const roles: { key: RoleKey; label: string; desc: string; icon: React.ReactNode; color: string }[] = [
+  { key: 'engineer', label: 'Engineer', desc: 'Sprint health & blockers', icon: <Code2 className="h-6 w-6" />, color: 'bg-blue-600' },
+  { key: 'hr', label: 'HR Manager', desc: 'Workforce & workload', icon: <Users className="h-6 w-6" />, color: 'bg-emerald-600' },
+  { key: 'chairperson', label: 'Chairperson', desc: 'Company-wide analysis', icon: <ShieldCheck className="h-6 w-6" />, color: 'bg-violet-600' },
+  { key: 'finance', label: 'Finance', desc: 'ROI & cost analysis', icon: <DollarSign className="h-6 w-6" />, color: 'bg-amber-600' },
 ];
 
 const pipelineSteps = [
@@ -241,9 +241,7 @@ const LandingPage = () => {
     <div className="min-h-screen bg-white text-foreground font-sans overflow-x-hidden">
       {/* ───── Background decorations ───── */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-32 -right-32 w-[500px] h-[500px] rounded-full bg-primary/5 blur-3xl" />
-        <div className="absolute top-1/3 -left-40 w-[400px] h-[400px] rounded-full bg-violet-500/5 blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 w-[350px] h-[350px] rounded-full bg-emerald-500/5 blur-3xl" />
+        <div className="absolute inset-0 bg-grid-black [mask-image:linear-gradient(to_bottom,white,transparent)]" />
       </div>
 
       {/* ═══════ NAVBAR ═══════ */}
@@ -251,7 +249,7 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto flex items-center justify-between px-6 h-16">
           {/* Logo */}
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-violet-600 shadow-lg shadow-primary/20">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-sm">
               <Cpu className="h-4.5 w-4.5 text-white" />
             </div>
             <span className="text-lg font-bold tracking-tight text-foreground">DeliverIQ</span>
@@ -284,7 +282,7 @@ const LandingPage = () => {
             </button>
             <button
               onClick={() => navigate('/select-role')}
-              className="text-sm font-semibold text-white bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90 px-5 py-2.5 rounded-xl shadow-md shadow-primary/20 transition-all hover:shadow-lg hover:shadow-primary/30"
+              className="text-sm font-semibold text-white bg-primary hover:bg-primary-hover px-5 py-2.5 rounded-xl shadow-sm transition-all hover:shadow-md"
             >
               Get Started
             </button>
@@ -358,7 +356,7 @@ const LandingPage = () => {
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.1] mb-6"
           >
             Work Smarter with{' '}
-            <span className="bg-gradient-to-r from-primary via-violet-500 to-purple-600 bg-clip-text text-transparent">
+            <span className="text-primary">
               AI-Driven
             </span>{' '}
             Decisions.
@@ -383,7 +381,7 @@ const LandingPage = () => {
           >
             <button
               onClick={() => navigate('/select-role')}
-              className="group flex items-center gap-2.5 text-sm font-semibold text-white bg-gradient-to-r from-primary to-violet-600 hover:from-primary/90 hover:to-violet-600/90 px-7 py-3.5 rounded-2xl shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02]"
+              className="group flex items-center gap-2.5 text-sm font-semibold text-white bg-primary hover:bg-primary-hover px-7 py-3.5 rounded-2xl shadow-md transition-all hover:shadow-lg hover:scale-[1.02]"
             >
               <span>Get Started Today</span>
               <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
@@ -449,7 +447,7 @@ const LandingPage = () => {
           className="relative"
         >
           {/* Glass frame around the dashboard mockup */}
-          <div className="rounded-3xl border border-border/80 bg-gradient-to-b from-secondary/80 to-white p-2 md:p-3 shadow-2xl shadow-primary/10">
+          <div className="rounded-3xl border border-border/80 bg-secondary/30 p-2 md:p-3 shadow-2xl shadow-primary/10">
             {/* Top bar mockup */}
             <div className="rounded-2xl border border-border bg-white overflow-hidden">
               {/* Browser chrome */}
@@ -468,9 +466,9 @@ const LandingPage = () => {
               </div>
 
               {/* Dashboard screenshot mockup */}
-              <div className="p-6 md:p-8 bg-gradient-to-br from-white to-secondary/30">
+              <div className="p-6 md:p-8 bg-white/50">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center">
+                  <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                     <Cpu className="h-4 w-4 text-white" />
                   </div>
                   <div>
@@ -509,7 +507,7 @@ const LandingPage = () => {
                           whileInView={{ height: `${h}%` }}
                           viewport={{ once: true }}
                           transition={{ delay: 0.8 + i * 0.05, duration: 0.5 }}
-                          className="flex-1 rounded-t-md bg-gradient-to-t from-primary to-violet-400"
+                          className="flex-1 rounded-t-md bg-primary"
                         />
                       ))}
                     </div>
@@ -553,7 +551,7 @@ const LandingPage = () => {
           >
             <div className="rounded-2xl border border-border bg-white p-3 shadow-2xl shadow-primary/15">
               <div className="flex items-center gap-2 mb-3">
-                <div className="h-5 w-5 rounded-md bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center">
+                <div className="h-5 w-5 rounded-md bg-primary flex items-center justify-center">
                   <Cpu className="h-2.5 w-2.5 text-white" />
                 </div>
                 <span className="text-[9px] font-bold">DeliverIQ</span>
@@ -596,7 +594,7 @@ const LandingPage = () => {
       </section>
 
       {/* ═══════ ARCHITECTURE PIPELINE ═══════ */}
-      <section id="architecture" className="relative z-10 bg-gradient-to-b from-secondary/50 to-white py-20">
+      <section id="architecture" className="relative z-10 bg-secondary/30 py-20">
         <div className="max-w-5xl mx-auto px-6">
           <SectionTitle badge="Architecture" title="End-to-End Decision Pipeline" subtitle="From raw graph data to human-ready insights in seven intelligent steps." />
           <motion.div
@@ -640,9 +638,9 @@ const LandingPage = () => {
               onClick={() => handleRoleSelect(role.key)}
               className="group relative rounded-2xl border border-border bg-white p-6 text-left hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 transition-all duration-300 overflow-hidden"
             >
-              {/* gradient bar */}
-              <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${role.gradient} opacity-0 group-hover:opacity-100 transition-opacity`} />
-              <div className={`inline-flex items-center justify-center h-14 w-14 rounded-2xl bg-gradient-to-br ${role.gradient} text-white mb-5 shadow-lg group-hover:scale-110 transition-transform`}>
+              {/* hover bar */}
+              <div className={`absolute top-0 left-0 right-0 h-1 ${role.color} opacity-0 group-hover:opacity-100 transition-opacity`} />
+              <div className={`inline-flex items-center justify-center h-14 w-14 rounded-2xl ${role.color} text-white mb-5 shadow-md group-hover:scale-110 transition-transform`}>
                 {role.icon}
               </div>
               <h3 className="text-base font-bold text-foreground mb-1">{role.label}</h3>
@@ -657,7 +655,7 @@ const LandingPage = () => {
       </section>
 
       {/* ═══════ TRUST / PRINCIPLES ═══════ */}
-      <section id="trust" className="relative z-10 bg-gradient-to-b from-white to-secondary/50 py-20">
+      <section id="trust" className="relative z-10 bg-secondary/30 py-20">
         <div className="max-w-5xl mx-auto px-6">
           <SectionTitle badge="Trust & Safety" title="Built on Transparency" subtitle="Every recommendation is explainable, verifiable, and grounded in real data." />
           <div className="grid sm:grid-cols-3 gap-6">
@@ -688,7 +686,7 @@ const LandingPage = () => {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="text-center rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/5 via-violet-500/5 to-purple-500/5 p-10 md:p-14"
+          className="text-center rounded-3xl border border-border bg-white p-10 md:p-14 shadow-sm"
         >
           <h2 className="text-2xl md:text-3xl font-extrabold mb-4">Ready to make better decisions?</h2>
           <p className="text-muted-foreground mb-8 max-w-lg mx-auto">
@@ -732,7 +730,7 @@ const LandingPage = () => {
             {/* Brand */}
             <div className="sm:col-span-1">
               <div className="flex items-center gap-2 mb-3">
-                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center">
+                <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
                   <Cpu className="h-4 w-4 text-white" />
                 </div>
                 <span className="font-bold text-foreground">DeliverIQ</span>

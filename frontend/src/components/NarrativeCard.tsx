@@ -32,8 +32,8 @@ const NarrativeCard = ({ role, className }: Props) => {
   const [hasGenerated, setHasGenerated] = useState(false);
   const [, setTick] = useState(0);
 
-  const fetchNarrative = async () => {
-    setLoading(true);
+  const fetchNarrative = async (isBackground = false) => {
+    if (!isBackground) setLoading(true);
     setError('');
     try {
       const res = await api.getNarrative(role);
@@ -41,15 +41,24 @@ const NarrativeCard = ({ role, className }: Props) => {
       setGeneratedAt(new Date());
       setHasGenerated(true);
     } catch (err: any) {
-      setError(err?.message || 'Failed to generate narrative');
+      if (!isBackground) setError(err?.message || 'Failed to generate narrative');
     } finally {
       setLoading(false);
     }
   };
 
-  // Refresh the "time ago" label every 30s
+  // Poll every 30s if generated
   useEffect(() => {
-    const interval = setInterval(() => setTick((t) => t + 1), 30000);
+    if (!hasGenerated) return;
+    const interval = setInterval(() => {
+      fetchNarrative(true);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [hasGenerated]);
+
+  // Refresh the "time ago" label every 10s
+  useEffect(() => {
+    const interval = setInterval(() => setTick((t) => t + 1), 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -68,16 +77,28 @@ const NarrativeCard = ({ role, className }: Props) => {
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border/40">
         <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 shadow-sm">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-teal-500 to-teal-600 shadow-sm relative">
             <BrainCircuit className="h-4 w-4 text-white" />
+            {hasGenerated && (
+              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              </span>
+            )}
           </div>
           <div>
             <h3 className="text-sm font-semibold flex items-center gap-1.5">
               AI Intelligence Briefing
               <Sparkles className="h-3 w-3 text-teal-500" />
             </h3>
-            <p className="text-[10px] text-muted-foreground">
-              {hasGenerated ? 'Generated from live Neo4j graph data' : 'Click generate to analyze live data'}
+            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+              {hasGenerated ? (
+                <span className="text-emerald-600 font-medium flex items-center gap-1">
+                  • Live Monitoring
+                </span>
+              ) : (
+                'Click generate to analyze live data'
+              )}
             </p>
           </div>
         </div>
@@ -96,7 +117,7 @@ const NarrativeCard = ({ role, className }: Props) => {
           )}
           {hasGenerated && (
             <button
-              onClick={fetchNarrative}
+              onClick={() => fetchNarrative(false)}
               disabled={loading}
               className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
             >
@@ -127,12 +148,12 @@ const NarrativeCard = ({ role, className }: Props) => {
               <div className="text-center">
                 <p className="text-sm font-medium text-foreground/80">Ready to generate your briefing</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  AI will analyze live organizational data and produce<br/>
+                  AI will analyze live organizational data and produce<br />
                   actionable insights tailored to your {role} role
                 </p>
               </div>
               <button
-                onClick={fetchNarrative}
+                onClick={() => fetchNarrative(false)}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-md hover:from-teal-500 hover:to-emerald-500 transition-all hover:shadow-lg active:scale-[0.98]"
               >
                 <Zap className="h-4 w-4" />
@@ -175,7 +196,7 @@ const NarrativeCard = ({ role, className }: Props) => {
                 <AlertTriangle className="h-5 w-5 text-red-400" />
               </div>
               <p className="text-sm text-red-400 text-center">{error}</p>
-              <button onClick={fetchNarrative} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+              <button onClick={() => fetchNarrative(false)} className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
                 <RefreshCw className="h-3.5 w-3.5" /> Try again
               </button>
             </motion.div>

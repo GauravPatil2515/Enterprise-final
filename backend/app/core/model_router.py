@@ -52,14 +52,14 @@ _SYSTEM_PROMPTS = {
         "You are an expert Engineering Delivery Analyst. "
         "Your job is to analyze risk signals, explain WHY a project is at risk, "
         "and reason about tradeoffs between interventions. "
-        "Always cite evidence from the provided project data. Be direct and data-driven. "
+        "Always cite evidence using the format [Ticket-ID]. Be direct and data-driven. "
         "Use contrastive reasoning: 'If we do A → X, but if B → Y.'"
     ),
     TaskType.EXPLANATION: (
         "You are a senior engineering communicator. "
         "Transform technical analysis into clear, actionable explanations for decision-makers. "
         "Use bullet points, bold key metrics, and structure your response with headers. "
-        "Be concise but thorough. Cite specific data points."
+        "Be concise but thorough. Cite specific data points using [Ticket-ID] format."
     ),
     TaskType.POSTMORTEM: (
         "You are a principal engineer conducting a formal postmortem. "
@@ -79,32 +79,32 @@ _SYSTEM_PROMPTS = {
 
 MODEL_REGISTRY: Dict[TaskType, _ModelConfig] = {
     TaskType.INTENT: _ModelConfig(
-        model_id="Qwen/Qwen2.5-32B-Instruct",  # fast enough, reliable classification
-        max_tokens=20,
+        model_id="Qwen/Qwen2.5-32B-Instruct",  # Smart & fast for classification
+        max_tokens=50,
         temperature=0.0,
         system_prompt=_SYSTEM_PROMPTS[TaskType.INTENT],
     ),
     TaskType.REASONING: _ModelConfig(
-        model_id="Qwen/Qwen2.5-32B-Instruct",
-        max_tokens=800,
+        model_id="deepseek-ai/DeepSeek-V3",  # SOTA reasoning model
+        max_tokens=1000,
         temperature=0.3,
         system_prompt=_SYSTEM_PROMPTS[TaskType.REASONING],
     ),
     TaskType.EXPLANATION: _ModelConfig(
-        model_id="Qwen/Qwen2.5-32B-Instruct",
-        max_tokens=1000,
+        model_id="deepseek-ai/DeepSeek-V3",  # Switch to DeepSeek-V3 (Ungated SOTA)
+        max_tokens=1200,
         temperature=0.4,
         system_prompt=_SYSTEM_PROMPTS[TaskType.EXPLANATION],
     ),
     TaskType.POSTMORTEM: _ModelConfig(
-        model_id="Qwen/Qwen2.5-32B-Instruct",
-        max_tokens=1500,
-        temperature=0.2,
+        model_id="Qwen/Qwen2.5-32B-Instruct",  # DeepSeek API failing (500), using Qwen as reliable fallback
+        max_tokens=2000,
+        temperature=0.3,
         system_prompt=_SYSTEM_PROMPTS[TaskType.POSTMORTEM],
     ),
     TaskType.SUMMARY: _ModelConfig(
-        model_id="Qwen/Qwen2.5-32B-Instruct",
-        max_tokens=300,
+        model_id="Qwen/Qwen2.5-32B-Instruct",  # Switch to Qwen (Ungated Workhorse)
+        max_tokens=400,
         temperature=0.3,
         system_prompt=_SYSTEM_PROMPTS[TaskType.SUMMARY],
     ),
@@ -156,7 +156,9 @@ class ModelRouter:
             return resp.choices[0].message.content
         except Exception as e:
             logger.error(f"ModelRouter [{task.value}] error: {e}")
-            raise RuntimeError(f"LLM [{task.value}] failed: {e}") from e
+            # PHASE 1 FIX: Removed fake postmortem fallback.
+            # We must fail honestly if the LLM is down.
+            raise RuntimeError(f"LLM [{task.value}] unavailable: {str(e)}") from e
 
     def stream(
         self,

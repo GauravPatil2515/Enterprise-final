@@ -12,13 +12,20 @@ from .core.constants import ROLE_DEFINITIONS
 from .core.config import settings
 from .api.routes import router as crud_router
 from .core.neo4j_client import neo4j_client
-from .core.llm import llm_client
+from .core.model_router import model_router, TaskType
 from .core.model_router import model_router, TaskType
 from .core.context_manager import context_assembler
+from .core.cache import get_cached_risk, set_cached_risk
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+print("🔥🔥🔥 BACKEND RESTARTING 🔥🔥🔥")
+
+from .agents.coordinator import coordinator
+from .agents.hiring import hiring_analytics
 
 app = FastAPI(
     title="AI-Driven Delivery Intelligence",
@@ -35,20 +42,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Risk analysis cache (TTL-based, avoids re-running LLM per chat msg) ──
-_risk_cache: Dict[str, dict] = {}  # { project_id: { "result": ..., "ts": ... } }
-RISK_CACHE_TTL = 300  # 5 minutes
 
-
-def _get_cached_risk(project_id: str) -> Optional[AnalysisResult]:
-    entry = _risk_cache.get(project_id)
-    if entry and (time.time() - entry["ts"]) < RISK_CACHE_TTL:
-        return entry["result"]
-    return None
-
-
-def _set_cached_risk(project_id: str, result: AnalysisResult):
-    _risk_cache[project_id] = {"result": result, "ts": time.time()}
 
 
 # ── Shutdown: close Neo4j driver ──
@@ -68,20 +62,101 @@ risk_agent = DeliveryRiskAgent()
 @app.get("/api/analyze/{project_id}", response_model=AnalysisResult)
 async def analyze_project(project_id: str):
     """
-    Analyze project delivery risk.
-    Graph → Agents → LLM → Human pipeline. No fake data.
-    Results are cached for 5 minutes to speed up chat.
+    Analyze project delivery risk using the Sequential Debate Pipeline (Phase 2).
+    Maps the debate result to the legacy AnalysisResult schema for backward compatibility.
     """
     try:
-        cached = _get_cached_risk(project_id)
-        if cached:
-            return cached
-        result = risk_agent.analyze(project_id)
-        _set_cached_risk(project_id, result)
-        return result
+        # Run the new debate pipeline
+        result = coordinator.run_debate(project_id)
+        
+        # Map debate result to AnalysisResult
+        from .core.models import AgentOpinion, DecisionComparison
+        
+        opinions = [
+            AgentOpinion(
+                agent=turn["agent_name"],
+                claim=turn["claim"],
+                confidence=turn["confidence"],
+                evidence=turn["evidence"]
+            )
+            for turn in result["debate_log"]
+        ]
+        
+        # Reconstruct DecisionComparison objects if present in result
+        decisions = []
+        if "decision_comparison" in result:
+             decisions = [DecisionComparison(**d) for d in result["decision_comparison"]]
+
+        return AnalysisResult(
+            project_id=result["project_id"],
+            project_name=result["project_name"],
+            risk_score=result["risk_score"],
+            risk_level=result["risk_level"],
+            primary_reason=result["consensus"], # Using consensus/arbiter output
+            supporting_signals=result["supporting_signals"],
+            recommended_actions=result["recommended_actions"],
+            agent_opinions=opinions,
+            decision_comparison=decisions,
+            debate_log=result["debate_log"]
+        )
     except Exception as e:
         logger.error(f"Analysis failed for {project_id}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Analysis error: {str(e)}")
+
+
+@app.get("/api/debate/{project_id}")
+async def get_project_debate(project_id: str):
+    """
+    Get the full structured debate log for a project.
+    Risk -> Finance -> Consumer -> Arbiter.
+    """
+    try:
+        return coordinator.run_debate(project_id)
+    except Exception as e:
+        logger.error(f"Debate failed for {project_id}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ── Hiring Analytics ──
+
+@app.get("/api/hiring/analytics")
+async def get_hiring_analytics():
+    """
+    Get full hiring analytics: velocity, skill gaps, cost efficiency.
+    Powered by real Neo4j graph data.
+    """
+    try:
+        return hiring_analytics.get_full_analysis()
+    except Exception as e:
+        logger.error(f"Hiring analytics failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/hiring/velocity")
+async def get_team_velocity():
+    """Get team velocity metrics."""
+    try:
+        return hiring_analytics.get_team_velocity()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/hiring/skill-gaps")
+async def get_skill_gaps():
+    """Get skill gap analysis."""
+    try:
+        return hiring_analytics.get_skill_gaps()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/hiring/cost-efficiency")
+async def get_cost_efficiency():
+    """Get cost efficiency metrics."""
+    try:
+        return hiring_analytics.get_cost_efficiency()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ── Chat Models ──
@@ -101,10 +176,10 @@ def _build_project_context(project_id: str) -> str:
         # Get risk analysis result from cache or run fresh
         risk_result = None
         try:
-            risk_result = _get_cached_risk(project_id)
+            risk_result = get_cached_risk(project_id)
             if not risk_result:
                 risk_result = risk_agent.analyze(project_id)
-                _set_cached_risk(project_id, risk_result)
+                set_cached_risk(project_id, risk_result)
         except Exception:
             pass
 
@@ -1064,11 +1139,46 @@ async def get_available_roles():
 async def get_knowledge_graph():
     """
     Return knowledge graph data for neural visualization.
-    Returns { nodes: [...], edges: [...] } with team, member, project, and skill nodes.
+    Returns { nodes: [...], edges: [...] } with team, member, project, skill, and ticket nodes.
+    Includes synthetic data for skills, tickets, and relationships.
     """
+    import random
+    import hashlib
+    
+    # Skill definitions for synthetic data
+    SKILLS = [
+        ("React", "Frontend"), ("Vue.js", "Frontend"), ("Angular", "Frontend"),
+        ("TypeScript", "Frontend"), ("Tailwind", "Frontend"),
+        ("Python", "Backend"), ("Node.js", "Backend"), ("Go", "Backend"),
+        ("Java", "Backend"), ("FastAPI", "Backend"),
+        ("PostgreSQL", "Database"), ("MongoDB", "Database"), ("Neo4j", "Database"),
+        ("AWS", "Cloud"), ("Docker", "DevOps"), ("Kubernetes", "DevOps"),
+        ("Figma", "Design"), ("UI/UX", "Design"),
+        ("Machine Learning", "AI"), ("Data Analysis", "AI"),
+        ("Agile", "Management"), ("Scrum", "Management")
+    ]
+    
+    TICKET_TEMPLATES = [
+        ("Fix login timeout", "Bug", "High"),
+        ("Add dark mode", "Feature", "Medium"),
+        ("Optimize API", "Task", "High"),
+        ("Analytics dashboard", "Feature", "Medium"),
+        ("Memory leak fix", "Bug", "Critical"),
+        ("Update deps", "Task", "Low"),
+        ("SSO integration", "Feature", "High"),
+        ("Mobile responsive", "Bug", "Medium"),
+        ("Export to PDF", "Feature", "Low"),
+        ("Performance audit", "Task", "Medium"),
+    ]
+    
+    STATUSES = ["Open", "In Progress", "Review", "Done"]
+    
     try:
         nodes = []
         edges = []
+        member_ids = []
+        project_ids = []
+        team_ids = []
 
         # Get Teams
         team_records, _ = neo4j_client.execute_query("""
@@ -1082,8 +1192,10 @@ async def get_knowledge_graph():
         
         for r in team_records:
             team = dict(r["team"])
+            team_id = team.get("id", team.get("name"))
+            team_ids.append(team_id)
             nodes.append({
-                "id": team.get("id", team.get("name")),
+                "id": team_id,
                 "label": team.get("name", "Unknown Team"),
                 "type": "team",
                 "properties": {
@@ -1106,6 +1218,14 @@ async def get_knowledge_graph():
         for r in member_records:
             member = dict(r["member"])
             member_id = member.get("id", member.get("name"))
+            member_ids.append(member_id)
+            
+            # Deterministic skill assignment based on member name
+            seed = int(hashlib.md5(member_id.encode()).hexdigest()[:8], 16)
+            random.seed(seed)
+            num_skills = random.randint(2, 4)
+            member_skills = random.sample(SKILLS, num_skills)
+            
             nodes.append({
                 "id": member_id,
                 "label": member.get("name", "Unknown Member"),
@@ -1113,6 +1233,7 @@ async def get_knowledge_graph():
                 "properties": {
                     "role": member.get("role", "N/A"),
                     "active_tickets": r["active_tickets"],
+                    "skills": ", ".join([s[0] for s in member_skills]),
                 }
             })
             
@@ -1134,9 +1255,18 @@ async def get_knowledge_graph():
                    count(DISTINCT tk) as active_tickets
         """)
         
-        for r in project_records:
+        risk_levels = ["low", "medium", "high", "critical"]
+        
+        for idx, r in enumerate(project_records):
             project = dict(r["project"])
             project_id = project.get("id", project.get("name"))
+            project_ids.append(project_id)
+            
+            # Deterministic risk level
+            seed = int(hashlib.md5(project_id.encode()).hexdigest()[:8], 16)
+            random.seed(seed)
+            risk = random.choices(risk_levels, weights=[0.4, 0.35, 0.2, 0.05])[0]
+            
             nodes.append({
                 "id": project_id,
                 "label": project.get("name", "Unknown Project"),
@@ -1145,6 +1275,7 @@ async def get_knowledge_graph():
                     "status": project.get("status", "Unknown"),
                     "progress": project.get("progress", 0),
                     "active_tickets": r["active_tickets"],
+                    "risk_level": risk,
                 }
             })
             
@@ -1169,6 +1300,107 @@ async def get_knowledge_graph():
                     "target": r["project_id"],
                     "type": "WORKS_ON"
                 })
+
+        # ============= SYNTHETIC DATA ENRICHMENT =============
+        
+        # Add Skill nodes
+        skill_nodes = {}
+        for skill_name, category in SKILLS:
+            skill_id = f"skill-{skill_name.lower().replace(' ', '-').replace('/', '-')}"
+            skill_nodes[skill_name] = skill_id
+            nodes.append({
+                "id": skill_id,
+                "label": skill_name,
+                "type": "skill",
+                "properties": {
+                    "category": category,
+                }
+            })
+        
+        # Connect members to skills
+        for member_id in member_ids:
+            seed = int(hashlib.md5(member_id.encode()).hexdigest()[:8], 16)
+            random.seed(seed)
+            num_skills = random.randint(2, 4)
+            member_skills = random.sample(SKILLS, num_skills)
+            
+            for skill_name, _ in member_skills:
+                edges.append({
+                    "source": member_id,
+                    "target": skill_nodes[skill_name],
+                    "type": "HAS_SKILL"
+                })
+        
+        # Add Ticket nodes for each project
+        ticket_count = 0
+        for project_id in project_ids:
+            seed = int(hashlib.md5(project_id.encode()).hexdigest()[:8], 16)
+            random.seed(seed)
+            num_tickets = random.randint(3, 5)
+            
+            for i in range(num_tickets):
+                template = random.choice(TICKET_TEMPLATES)
+                title, ticket_type, priority = template
+                status = random.choice(STATUSES)
+                ticket_id = f"tkt-{project_id[-6:]}-{i+1:02d}"
+                
+                nodes.append({
+                    "id": ticket_id,
+                    "label": f"{title[:20]}...",
+                    "type": "ticket",
+                    "properties": {
+                        "title": title,
+                        "ticket_type": ticket_type,
+                        "priority": priority,
+                        "status": status,
+                    }
+                })
+                
+                # Connect ticket to project
+                edges.append({
+                    "source": project_id,
+                    "target": ticket_id,
+                    "type": "HAS_TICKET"
+                })
+                
+                # Assign to a random member
+                if member_ids:
+                    assignee = random.choice(member_ids)
+                    edges.append({
+                        "source": assignee,
+                        "target": ticket_id,
+                        "type": "ASSIGNED_TO"
+                    })
+                
+                ticket_count += 1
+        
+        # Add project dependencies (some projects depend on others)
+        if len(project_ids) >= 2:
+            random.seed(42)  # Consistent dependencies
+            num_deps = min(6, len(project_ids) - 1)
+            for _ in range(num_deps):
+                p1 = random.choice(project_ids)
+                p2 = random.choice([p for p in project_ids if p != p1])
+                edges.append({
+                    "source": p1,
+                    "target": p2,
+                    "type": "DEPENDS_ON"
+                })
+        
+        # Add communication links between members
+        if len(member_ids) >= 2:
+            random.seed(123)  # Consistent communication
+            frequencies = ["daily", "weekly", "monthly"]
+            for member_id in member_ids:
+                num_contacts = random.randint(1, min(3, len(member_ids) - 1))
+                contacts = random.sample([m for m in member_ids if m != member_id], num_contacts)
+                for contact in contacts:
+                    edges.append({
+                        "source": member_id,
+                        "target": contact,
+                        "type": "COMMUNICATES_WITH",
+                        "properties": {"frequency": random.choice(frequencies)}
+                    })
 
         return {"nodes": nodes, "edges": edges}
         

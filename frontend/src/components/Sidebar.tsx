@@ -76,7 +76,6 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   const allAiItems = [
     { icon: MessageCircle, label: 'AI Co-Pilot', path: '/chat', accent: true },
     { icon: FlaskConical, label: 'Team Simulator', path: '/simulator', restrictedFor: ['engineer'] },
-    { icon: Network, label: 'Neural Graph', path: '/neural-graph', restrictedFor: ['engineer'] },
     { icon: GitGraph, label: 'Knowledge Graph', path: '/graph', restrictedFor: ['engineer'] },
     { icon: Cpu, label: 'Hiring Optimizer', path: '/hiring-optimizer', restrictedFor: ['engineer', 'finance', 'chairperson'] },
   ];
@@ -91,7 +90,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
       {/* Brand Header */}
       <div className="flex h-16 items-center gap-3 px-6 border-b border-sidebar-border/50 shadow-sm bg-sidebar/50 backdrop-blur-sm">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-primary-hover shadow-md ring-1 ring-white/10">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shadow-sm ring-1 ring-white/10">
           <Cpu className="h-5 w-5 text-white" />
         </div>
         <div className="flex-1 min-w-0">
@@ -168,7 +167,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
                   <item.icon className={cn("h-4 w-4", isActive ? "text-primary" : "text-muted-foreground group-hover:text-primary")} />
                   {item.label}
                   {item.accent && (
-                    <span className="ml-auto flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-gradient-to-r from-primary/20 to-blue-500/20 text-primary border border-primary/20">
+                    <span className="ml-auto flex items-center gap-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
                       <span className="relative flex h-1.5 w-1.5">
                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
                         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
@@ -284,7 +283,7 @@ export const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
       {/* Footer / User Profile */}
       <div className="border-t border-sidebar-border p-4 bg-sidebar-accent/20">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-500 to-teal-400 flex items-center justify-center text-white text-xs font-bold ring-2 ring-sidebar-border">
+          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold ring-2 ring-sidebar-border">
             AL
           </div>
           <div className="flex-1 min-w-0">

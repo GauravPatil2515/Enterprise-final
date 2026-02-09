@@ -6,6 +6,9 @@ from typing import Dict, Any, List, Optional
 from pydantic import BaseModel
 import logging
 
+import logging
+from ..core.cache import invalidate_project_risk
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["CRUD"])
@@ -108,6 +111,17 @@ async def get_project_detail(project_id: str):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@router.get("/projects/{project_id}/signals")
+async def get_project_signals(project_id: str):
+    """Get graph-derived signals for a project."""
+    try:
+        from ..core.graph_signals import signal_extractor
+        return signal_extractor.get_signals(project_id)
+    except Exception as e:
+        logger.error(f"Failed to fetch signals for {project_id}: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ============================================================================
 # Tickets
 # ============================================================================
@@ -129,6 +143,7 @@ async def create_project_ticket(project_id: str, ticket: TicketCreate):
     try:
         from ..core.crud import create_ticket
         result = create_ticket(project_id, ticket.model_dump())
+        invalidate_project_risk(project_id)
         return result
     except Exception as e:
         logger.error(f"Failed to create ticket in {project_id}: {e}")
@@ -139,11 +154,19 @@ async def create_project_ticket(project_id: str, ticket: TicketCreate):
 async def update_ticket_detail(ticket_id: str, ticket: TicketUpdate):
     """Update a ticket's fields."""
     try:
-        from ..core.crud import update_ticket
+        from ..core.crud import update_ticket, get_ticket_project_id
+        
+        # Get project ID before update for invalidation
+        project_id = get_ticket_project_id(ticket_id)
+        
         data = {k: v for k, v in ticket.model_dump().items() if v is not None}
         result = update_ticket(ticket_id, data)
         if not result:
             raise HTTPException(status_code=404, detail="Ticket not found")
+            
+        if project_id:
+            invalidate_project_risk(project_id)
+            
         return result
     except HTTPException:
         raise
@@ -156,10 +179,18 @@ async def update_ticket_detail(ticket_id: str, ticket: TicketUpdate):
 async def patch_ticket_status(ticket_id: str, body: TicketStatusUpdate):
     """Update just the status of a ticket (drag-drop)."""
     try:
-        from ..core.crud import update_ticket_status
+        from ..core.crud import update_ticket_status, get_ticket_project_id
+        
+        # Get project ID before update
+        project_id = get_ticket_project_id(ticket_id)
+        
         result = update_ticket_status(ticket_id, body.status)
         if not result:
             raise HTTPException(status_code=404, detail="Ticket not found")
+            
+        if project_id:
+            invalidate_project_risk(project_id)
+            
         return result
     except HTTPException:
         raise
@@ -172,8 +203,16 @@ async def patch_ticket_status(ticket_id: str, body: TicketStatusUpdate):
 async def remove_ticket(ticket_id: str):
     """Delete a ticket."""
     try:
-        from ..core.crud import delete_ticket
+        from ..core.crud import delete_ticket, get_ticket_project_id
+        
+        # Get project ID before delete because relationship will be gone
+        project_id = get_ticket_project_id(ticket_id)
+        
         delete_ticket(ticket_id)
+        
+        if project_id:
+            invalidate_project_risk(project_id)
+            
         return {"status": "deleted", "id": ticket_id}
     except Exception as e:
         logger.error(f"Failed to delete ticket {ticket_id}: {e}")

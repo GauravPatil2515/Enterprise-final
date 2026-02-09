@@ -35,11 +35,29 @@ const TeamOverview = () => {
   const { state } = useTeams();
   const [loading, setLoading] = useState(true);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [graphData, setGraphData] = useState<{ nodes: any[], edges: any[] } | null>(null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(timer);
+    setLoading(false);
   }, []);
+
+  // Fetch graph data for skills
+  useEffect(() => {
+    fetch('/api/graph/knowledge')
+      .then(res => res.json())
+      .then(data => setGraphData(data))
+      .catch(() => { });
+  }, []);
+
+  // Get skills for a member from graph data
+  const getMemberSkills = (memberId: string): string[] => {
+    if (!graphData) return [];
+    const memberNode = graphData.nodes.find(n => n.id === memberId && n.type === 'member');
+    if (memberNode?.properties?.skills) {
+      return memberNode.properties.skills.split(', ').slice(0, 3);
+    }
+    return [];
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -201,25 +219,43 @@ const TeamOverview = () => {
               Team Members
             </h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {selectedTeam.members.map((member) => (
-                <div
-                  key={member.id}
-                  className="flex items-center gap-3 rounded-lg border bg-muted/30 p-4"
-                >
-                  <Avatar className="h-12 w-12">
-                    <AvatarImage src={member.avatar} />
-                    <AvatarFallback>{member.name.slice(0, 2)}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{member.name}</p>
-                    <p className="text-sm text-muted-foreground">{member.role}</p>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+              {selectedTeam.members.map((member) => {
+                const skills = getMemberSkills(member.id);
+                return (
+                  <div
+                    key={member.id}
+                    className="flex flex-col gap-3 rounded-lg border bg-muted/30 p-4 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={member.avatar} />
+                        <AvatarFallback>{member.name.slice(0, 2)}</AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate">{member.name}</p>
+                        <p className="text-sm text-muted-foreground">{member.role}</p>
+                      </div>
+                    </div>
+                    {/* Skills */}
+                    {skills.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {skills.map(skill => (
+                          <span
+                            key={skill}
+                            className="px-2 py-0.5 text-[10px] font-medium rounded-full bg-orange-500/10 text-orange-600 border border-orange-500/20"
+                          >
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <Mail className="h-3 w-3" />
                       <span className="truncate">{member.email}</span>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -268,8 +304,8 @@ const TeamOverview = () => {
                         project.status === 'Ongoing'
                           ? 'bg-primary/10 text-primary'
                           : project.status === 'Completed'
-                          ? 'bg-success/10 text-success'
-                          : 'bg-muted text-muted-foreground'
+                            ? 'bg-success/10 text-success'
+                            : 'bg-muted text-muted-foreground'
                       )}
                     >
                       {project.status === 'Ongoing' && <Clock className="h-3 w-3" />}

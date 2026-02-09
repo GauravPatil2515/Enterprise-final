@@ -7,12 +7,12 @@
  */
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   Users,
   Plus,
   Minus,
-  ArrowRight,
   Loader2,
   AlertTriangle,
   TrendingDown,
@@ -24,7 +24,6 @@ import {
   ArrowLeftRight,
   ChevronRight,
   BarChart3,
-  RefreshCw,
 } from 'lucide-react';
 import { api } from '@/services/api';
 import ReactMarkdown from 'react-markdown';
@@ -60,6 +59,13 @@ const TeamSimulatorPage = () => {
     queryFn: api.getSimulatorRoles,
   });
 
+  // Fetch real risk for baseline
+  const { data: realRisk } = useQuery({
+    queryKey: ['risk-analysis', selectedProject],
+    queryFn: () => api.analyzeProject(selectedProject),
+    enabled: !!selectedProject,
+  });
+
   // Fetch projects for selector
   const { data: teams } = useQuery({
     queryKey: ['teams'],
@@ -84,6 +90,7 @@ const TeamSimulatorPage = () => {
       api.simulateTeam(
         selectedProject,
         mutations.map((m) => ({ action: m.action, role: m.role, member_name: m.member_name })),
+        realRisk?.risk_score // Pass real baseline
       ),
   });
 
@@ -122,6 +129,9 @@ const TeamSimulatorPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-8"
         >
+          <Link to="/role-dashboard" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors">
+            <ChevronRight className="h-4 w-4 rotate-180" /> Back to Dashboard
+          </Link>
           <div className="flex items-center gap-3 mb-2">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-600">
               <Users className="h-5 w-5 text-white" />
@@ -281,6 +291,10 @@ const TeamSimulatorPage = () => {
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold">Simulation Results</h3>
                     <div className="flex items-center gap-2">
+                      {/* Show source of truth */}
+                      <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider border rounded px-1.5 bg-muted">
+                        Real-Time Baseline
+                      </span>
                       <ContextPill
                         label="Project"
                         value={simulationMut.data.project_id}
@@ -307,13 +321,12 @@ const TeamSimulatorPage = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.1 }}
-                    className={`rounded-2xl border backdrop-blur p-5 ${
-                      sim.feasible
-                        ? sim.risk_delta < 0
-                          ? 'border-emerald-500/20 bg-emerald-500/5'
-                          : 'border-amber-500/20 bg-amber-500/5'
-                        : 'border-red-500/20 bg-red-500/5'
-                    }`}
+                    className={`rounded-2xl border backdrop-blur p-5 ${sim.feasible
+                      ? sim.risk_delta < 0
+                        ? 'border-emerald-500/20 bg-emerald-500/5'
+                        : 'border-amber-500/20 bg-amber-500/5'
+                      : 'border-red-500/20 bg-red-500/5'
+                      }`}
                   >
                     {/* Mutation Header */}
                     <div className="flex items-center justify-between mb-4">

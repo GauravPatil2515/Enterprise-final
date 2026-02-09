@@ -604,6 +604,12 @@ const FinanceDashboard = () => {
             <Target className="h-4 w-4 text-amber-400" />
             <h2 className="text-lg font-semibold">Financial Breakdown by Project</h2>
           </div>
+
+          <div className="mb-4 bg-muted/20 border border-muted rounded-lg p-3 text-xs text-muted-foreground flex gap-2 items-center">
+            <Shield className="h-3.5 w-3.5" />
+            <span><strong>Risk-Adjusted ROI</strong> is calculated by penalizing standard ROI based on blocked tickets (Risk Factor).</span>
+          </div>
+
           <div className="rounded-xl border bg-card overflow-hidden">
             <table className="w-full text-sm">
               <thead>
@@ -619,7 +625,8 @@ const FinanceDashboard = () => {
                   <th className="text-center p-3 font-medium">Revenue</th>
                   <th className="text-center p-3 font-medium">Profit</th>
                   <th className="text-center p-3 font-medium">ROI</th>
-                  <th className="text-center p-3 font-medium">Risk</th>
+                  <th className="text-center p-3 font-medium text-purple-600">Risk-Adj ROI</th>
+                  <th className="text-center p-3 font-medium">Risk Level</th>
                 </tr>
               </thead>
               <tbody>
@@ -627,6 +634,13 @@ const FinanceDashboard = () => {
                   .sort((a: any, b: any) => (b.roi || 0) - (a.roi || 0))
                   .map((proj: any) => {
                     const badge = riskBadge(proj.blocked_count);
+
+                    // Simple heuristic for Risk-Adjusted ROI without expensive LLM call per row
+                    // If blocked_count > 0, we penalize ROI.
+                    // 1 blocked = 10% penalty, 2 = 20%, etc. Max 50%.
+                    const riskPenalty = Math.min(proj.blocked_count * 0.1, 0.5);
+                    const riskAdjRoi = (proj.roi || 0) * (1 - riskPenalty);
+
                     return (
                       <tr key={proj.project_id} className="border-b last:border-b-0 hover:bg-muted/30 transition-colors">
                         <td className="p-3 font-medium">{proj.project_name}</td>
@@ -667,6 +681,14 @@ const FinanceDashboard = () => {
                             (proj.roi || 0) >= 0 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400',
                           )}>
                             {proj.roi || 0}%
+                          </span>
+                        </td>
+                        <td className="p-3 text-center">
+                          <span className={cn(
+                            'px-2 py-0.5 rounded text-xs font-bold border',
+                            riskAdjRoi >= 0 ? 'bg-purple-500/10 text-purple-600 border-purple-200' : 'bg-red-500/10 text-red-600 border-red-200',
+                          )}>
+                            {riskAdjRoi.toFixed(1)}%
                           </span>
                         </td>
                         <td className="p-3 text-center">

@@ -24,13 +24,13 @@ const teamsReducer = (state: TeamsState, action: TeamsAction): TeamsState => {
   switch (action.type) {
     case 'SET_TEAMS':
       return { ...state, teams: action.payload, loading: false };
-    
+
     case 'SELECT_TEAM':
       return { ...state, selectedTeamId: action.payload, selectedProjectId: null };
-    
+
     case 'SELECT_PROJECT':
       return { ...state, selectedProjectId: action.payload };
-    
+
     case 'UPDATE_TICKET_STATUS':
       return {
         ...state,
@@ -51,7 +51,7 @@ const teamsReducer = (state: TeamsState, action: TeamsAction): TeamsState => {
           };
         }),
       };
-    
+
     case 'ADD_TICKET':
       return {
         ...state,
@@ -69,7 +69,7 @@ const teamsReducer = (state: TeamsState, action: TeamsAction): TeamsState => {
           };
         }),
       };
-    
+
     case 'UPDATE_TICKET':
       return {
         ...state,
@@ -81,7 +81,7 @@ const teamsReducer = (state: TeamsState, action: TeamsAction): TeamsState => {
               if (project.id !== action.payload.projectId) return project;
               return {
                 ...project,
-                tickets: project.tickets.map(ticket => 
+                tickets: project.tickets.map(ticket =>
                   ticket.id === action.payload.ticket.id ? action.payload.ticket : ticket
                 ),
               };
@@ -89,7 +89,7 @@ const teamsReducer = (state: TeamsState, action: TeamsAction): TeamsState => {
           };
         }),
       };
-    
+
     case 'DELETE_TICKET':
       return {
         ...state,
@@ -107,10 +107,10 @@ const teamsReducer = (state: TeamsState, action: TeamsAction): TeamsState => {
           };
         }),
       };
-    
+
     case 'SET_LOADING':
       return { ...state, loading: action.payload };
-    
+
     default:
       return state;
   }
@@ -138,7 +138,7 @@ export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Load from API on mount, fallback to localStorage, then mockData
   useEffect(() => {
     let cancelled = false;
-    
+
     const loadFromAPI = async () => {
       try {
         const teams = await api.getTeams();
@@ -150,9 +150,9 @@ export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               ...project,
               tickets: (project.tickets || []).map((ticket: any) => ({
                 ...ticket,
-                labels: Array.isArray(ticket.labels) 
+                labels: Array.isArray(ticket.labels)
                   ? ticket.labels.filter((l: string) => l !== '')
-                  : typeof ticket.labels === 'string' 
+                  : typeof ticket.labels === 'string'
                     ? ticket.labels.split(',').filter((l: string) => l !== '')
                     : [],
                 attachments: Number(ticket.attachments) || 0,
@@ -161,7 +161,6 @@ export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             })),
           }));
           dispatch({ type: 'SET_TEAMS', payload: normalized });
-          console.log('✅ Loaded teams from API');
           return;
         }
       } catch (err) {
@@ -206,10 +205,10 @@ export const TeamsProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   };
 
   return (
-    <TeamsContext.Provider value={{ 
-      state, 
-      dispatch, 
-      getSelectedTeam, 
+    <TeamsContext.Provider value={{
+      state,
+      dispatch,
+      getSelectedTeam,
       getSelectedProject,
       getAllProjects,
       getAllTickets,

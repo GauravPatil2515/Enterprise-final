@@ -278,6 +278,18 @@ def delete_ticket(ticket_id: str) -> bool:
     return True
 
 
+def get_ticket_project_id(ticket_id: str) -> Optional[str]:
+    """Get the project ID for a given ticket."""
+    query = """
+    MATCH (p:Project)-[:HAS_TICKET]->(tk:Ticket {id: $ticket_id})
+    RETURN p.id as project_id
+    """
+    records, _ = neo4j_client.execute_query(query, {"ticket_id": ticket_id})
+    if records:
+        return records[0]["project_id"]
+    return None
+
+
 # ============================================================================
 # MEMBERS
 # ============================================================================

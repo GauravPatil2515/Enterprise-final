@@ -19,11 +19,11 @@ const roleIcons: Record<RoleKey, React.ReactNode> = {
   finance: <DollarSign className="h-3.5 w-3.5" />,
 };
 
-const roleGradients: Record<RoleKey, string> = {
-  engineer: 'from-blue-500 to-blue-700',
-  hr: 'from-green-500 to-green-700',
-  chairperson: 'from-purple-500 to-purple-700',
-  finance: 'from-amber-500 to-amber-700',
+const roleStyles: Record<RoleKey, string> = {
+  engineer: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+  hr: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20',
+  chairperson: 'bg-purple-500/10 text-purple-500 border-purple-500/20',
+  finance: 'bg-amber-500/10 text-amber-500 border-amber-500/20',
 };
 
 const RoleBadge = () => {
@@ -33,30 +33,38 @@ const RoleBadge = () => {
   if (!currentRole || !roleConfig) return null;
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       <div
         className={cn(
-          'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-white bg-gradient-to-r',
-          roleGradients[currentRole],
+          'inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border transition-all duration-300 shadow-sm',
+          roleStyles[currentRole]
         )}
       >
-        {roleIcons[currentRole]}
-        {roleConfig.label}
+        <div className="flex items-center justify-center">
+          {roleIcons[currentRole]}
+        </div>
+        <span>{roleConfig.label}</span>
       </div>
+
       {currentUser && (
-        <span className="text-xs text-muted-foreground hidden sm:inline">
+        <div className="h-4 w-px bg-border/40" />
+      )}
+
+      {currentUser && (
+        <span className="text-xs font-medium text-muted-foreground/80 hidden lg:inline-block">
           {currentUser.name}
         </span>
       )}
+
       <button
         onClick={() => {
           clearRole();
           navigate('/select-role');
         }}
-        className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded"
+        className="text-muted-foreground/50 hover:text-primary transition-all p-1.5 rounded-lg hover:bg-accent/50 group"
         title="Switch Role"
       >
-        <LogOut className="h-3.5 w-3.5" />
+        <LogOut className="h-3.5 w-3.5 group-hover:rotate-12 transition-transform" />
       </button>
     </div>
   );

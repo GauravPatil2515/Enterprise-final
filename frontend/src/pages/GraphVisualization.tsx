@@ -12,14 +12,14 @@ import * as THREE from "three";
 import {
   GitGraph, RefreshCw, Loader2, Users, Briefcase, Network,
   X, Maximize2, Minimize2, ChevronRight, Eye, EyeOff, Zap,
-  Search, Sparkles, Target, UserCheck,
+  Search, Sparkles, Target, UserCheck, Focus, ChevronDown,
 } from "lucide-react";
 
 /* ── types ── */
 interface RawNode {
   id: string;
   label: string;
-  type: "team" | "member" | "project" | "skill";
+  type: "team" | "member" | "project" | "skill" | "ticket";
   properties?: Record<string, any>;
 }
 interface RawEdge { source: string; target: string; type: string; }
@@ -38,20 +38,13 @@ interface SearchResult {
   matchReason: string;
 }
 
+import { GRAPH_COLORS, EDGE_COLORS, NODE_SIZES } from "@/lib/colors";
+import { API_BASE_URL } from "@/lib/api_config";
+
 /* ── palette (Light Mode - Solid & Professional) ── */
-const COLORS: Record<string, { main: string; hex: number }> = {
-  team: { main: "#2563eb", hex: 0x2563eb }, // Blue-600
-  member: { main: "#16a34a", hex: 0x16a34a }, // Green-600
-  project: { main: "#9333ea", hex: 0x9333ea }, // Purple-600
-  skill: { main: "#ea580c", hex: 0xea580c }, // Orange-600
-};
-const EDGE_COLORS: Record<string, string> = {
-  MEMBER_OF: "rgba(37,99,235,0.3)",
-  HAS_PROJECT: "rgba(147,51,234,0.3)",
-  WORKS_ON: "rgba(22,163,74,0.3)",
-  DEFAULT: "rgba(148,163,184,0.3)",
-};
-const NODE_SIZES: Record<string, number> = { team: 20, project: 15, member: 9, skill: 7 };
+// Uses constants from @/lib/colors
+const COLORS = GRAPH_COLORS;
+
 
 /* ── local skill-based search engine ── */
 function searchGraph(query: string, data: RawGraph): SearchResult[] {
@@ -157,6 +150,8 @@ const GraphVisualization = () => {
   const [selected, setSelected] = useState<FGNode | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
+  const [showSkills, setShowSkills] = useState(true);
+  const [showTickets, setShowTickets] = useState(false); // Off by default for cleaner view
   const [filter, setFilter] = useState("all");
   const [dimensions, setDimensions] = useState({ w: 800, h: 600 });
 
@@ -166,6 +161,10 @@ const GraphVisualization = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [highlightedIds, setHighlightedIds] = useState<Set<string>>(new Set());
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // Project Focus Mode
+  const [focusedProjectId, setFocusedProjectId] = useState<string | null>(null);
+  const [projectListOpen, setProjectListOpen] = useState(false);
 
   /* ── resize observer ── */
   useEffect(() => {
@@ -183,7 +182,7 @@ const GraphVisualization = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/graph/knowledge");
+      const res = await fetch(`${API_BASE_URL}/api/graph`);
       if (!res.ok) throw new Error("Backend returned " + res.status);
       setRawData(await res.json());
     } catch (e: any) {
@@ -231,7 +230,27 @@ const GraphVisualization = () => {
       color: COLORS[n.type]?.main ?? "#64748b",
       val: NODE_SIZES[n.type] ?? 8,
     }));
-    if (filter !== "all") {
+
+    // Filter out hidden node types
+    if (!showSkills) nodes = nodes.filter(n => n.type !== "skill");
+    if (!showTickets) nodes = nodes.filter(n => n.type !== "ticket");
+
+    // Project Focus Mode: Show only focused project and its connections
+    if (focusedProjectId) {
+      const connected = new Set<string>([focusedProjectId]);
+      rawData.edges.forEach(e => {
+        if (e.source === focusedProjectId) connected.add(e.target);
+        if (e.target === focusedProjectId) connected.add(e.source);
+      });
+      // Also get teams connected to those members
+      rawData.edges.forEach(e => {
+        if (connected.has(e.source) || connected.has(e.target)) {
+          connected.add(e.source);
+          connected.add(e.target);
+        }
+      });
+      nodes = nodes.filter(n => connected.has(n.id));
+    } else if (filter !== "all") {
       const ids = new Set(nodes.filter(n => n.type === filter).map(n => n.id));
       const connected = new Set<string>();
       rawData.edges.forEach(e => {
@@ -246,7 +265,31 @@ const GraphVisualization = () => {
       .filter(e => nodeIds.has(e.source) && nodeIds.has(e.target))
       .map(e => ({ source: e.source, target: e.target, type: e.type, color: EDGE_COLORS[e.type] ?? EDGE_COLORS.DEFAULT }));
     return { nodes, links };
-  }, [rawData, filter]);
+  }, [rawData, filter, focusedProjectId, showSkills, showTickets]);
+
+  /* ── Get all projects for quick focus ── */
+  const allProjects = useMemo(() => {
+    if (!rawData) return [];
+    return rawData.nodes.filter(n => n.type === "project").sort((a, b) => a.label.localeCompare(b.label));
+  }, [rawData]);
+
+  /* ── Focus on a project ── */
+  const focusOnProject = useCallback((projectId: string | null) => {
+    setFocusedProjectId(projectId);
+    setProjectListOpen(false);
+    if (projectId && fgRef.current) {
+      const gd = fgRef.current.graphData();
+      setTimeout(() => {
+        const node = gd.nodes.find((n: FGNode) => n.id === projectId);
+        if (node && fgRef.current) {
+          fgRef.current.cameraPosition(
+            { x: (node.x ?? 0) + 150, y: (node.y ?? 0) + 100, z: (node.z ?? 0) + 150 },
+            { x: node.x, y: node.y, z: node.z }, 1000,
+          );
+        }
+      }, 300);
+    }
+  }, []);
 
   /* ── custom 3-D node objects (Light Mode) ── */
   const nodeThreeObject = useCallback((node: FGNode) => {
@@ -353,11 +396,13 @@ const GraphVisualization = () => {
 
   /* ── stats ── */
   const stats = useMemo(() => {
-    if (!rawData) return { teams: 0, members: 0, projects: 0, edges: 0 };
+    if (!rawData) return { teams: 0, members: 0, projects: 0, skills: 0, tickets: 0, edges: 0 };
     return {
       teams: rawData.nodes.filter(n => n.type === "team").length,
       members: rawData.nodes.filter(n => n.type === "member").length,
       projects: rawData.nodes.filter(n => n.type === "project").length,
+      skills: rawData.nodes.filter(n => n.type === "skill").length,
+      tickets: rawData.nodes.filter(n => n.type === "ticket").length,
       edges: rawData.edges.length,
     };
   }, [rawData]);
@@ -386,7 +431,7 @@ const GraphVisualization = () => {
           <div>
             <h1 className="text-base font-bold text-slate-800 tracking-tight">Knowledge Graph</h1>
             <p className="text-[11px] text-slate-500 font-medium">
-              {stats.teams} teams · {stats.members} members · {stats.projects} projects
+              {stats.teams} teams · {stats.members} members · {stats.projects} projects · {stats.skills} skills · {stats.tickets} tickets
             </p>
           </div>
         </div>
@@ -400,14 +445,98 @@ const GraphVisualization = () => {
           >
             <Search className="h-4 w-4" />
           </button>
+
+          {/* Project Focus Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setProjectListOpen(v => !v)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border ${focusedProjectId
+                ? "bg-purple-100 text-purple-700 border-purple-300"
+                : "bg-white text-slate-500 border-slate-200 hover:text-slate-900 hover:bg-slate-50"
+                }`}
+              title="Focus on Project"
+            >
+              <Focus className="h-3.5 w-3.5" />
+              {focusedProjectId
+                ? allProjects.find(p => p.id === focusedProjectId)?.label.slice(0, 12) || "Project"
+                : "Focus"}
+              <ChevronDown className="h-3 w-3" />
+            </button>
+
+            {/* Dropdown */}
+            <AnimatePresence>
+              {projectListOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  className="absolute top-full mt-1 right-0 w-56 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden"
+                >
+                  <div className="p-2 border-b border-slate-100">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">Project Focus Mode</p>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto py-1">
+                    <button
+                      onClick={() => focusOnProject(null)}
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-slate-50 transition text-left ${!focusedProjectId ? "bg-slate-100 font-bold" : "text-slate-600"
+                        }`}
+                    >
+                      <Network className="h-3.5 w-3.5 text-slate-400" />
+                      Show All (No Focus)
+                    </button>
+                    {allProjects.map(project => (
+                      <button
+                        key={project.id}
+                        onClick={() => focusOnProject(project.id)}
+                        className={`w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-purple-50 transition text-left ${focusedProjectId === project.id ? "bg-purple-100 text-purple-700 font-bold" : "text-slate-700"
+                          }`}
+                      >
+                        <Briefcase className="h-3.5 w-3.5" style={{ color: COLORS.project.main }} />
+                        <span className="truncate">{project.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
           <div className="w-px h-5 bg-slate-300 mx-1" />
           {(["all", "team", "member", "project"] as const).map(f => (
-            <button key={f} onClick={() => setFilter(f)}
-              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all border ${filter === f
-                  ? "bg-slate-800 text-white border-slate-800 shadow-sm"
-                  : "bg-white text-slate-500 border-slate-200 hover:text-slate-900 hover:bg-slate-50"
+            <button key={f} onClick={() => { setFilter(f); setFocusedProjectId(null); }}
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-all border ${filter === f && !focusedProjectId
+                ? "bg-slate-800 text-white border-slate-800 shadow-sm"
+                : "bg-white text-slate-500 border-slate-200 hover:text-slate-900 hover:bg-slate-50"
                 }`}>{f === "all" ? "All" : f.charAt(0).toUpperCase() + f.slice(1) + "s"}</button>
           ))}
+          <div className="w-px h-5 bg-slate-300 mx-1" />
+
+          {/* Skills toggle */}
+          <button
+            onClick={() => setShowSkills(v => !v)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all border ${showSkills
+              ? "bg-orange-100 text-orange-700 border-orange-300"
+              : "bg-white text-slate-400 border-slate-200 hover:bg-slate-50"
+              }`}
+            title="Toggle Skills"
+          >
+            <span className="w-2 h-2 rounded-full" style={{ background: showSkills ? COLORS.skill.main : "#cbd5e1" }} />
+            Skills
+          </button>
+
+          {/* Tickets toggle */}
+          <button
+            onClick={() => setShowTickets(v => !v)}
+            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-all border ${showTickets
+              ? "bg-yellow-100 text-yellow-700 border-yellow-300"
+              : "bg-white text-slate-400 border-slate-200 hover:bg-slate-50"
+              }`}
+            title="Toggle Tickets"
+          >
+            <span className="w-2 h-2 rounded-full" style={{ background: showTickets ? COLORS.ticket.main : "#cbd5e1" }} />
+            Tickets
+          </button>
+
           <div className="w-px h-5 bg-slate-300 mx-1" />
           <button onClick={() => setShowLabels(v => !v)} className="p-2 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition" title="Toggle labels">
             {showLabels ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
@@ -604,21 +733,39 @@ const GraphVisualization = () => {
 
               {/* Actions */}
               {(selected.type === 'project' || selected.type === 'team') && (
-                <button
-                  onClick={() => {
-                    if (selected.type === 'project') {
-                      const edge = rawData?.edges.find(e => e.target === selected.id && e.type === 'HAS_PROJECT');
-                      const teamId = edge ? edge.source : 't1';
-                      navigate(`/project/${teamId}/${selected.id}`);
-                    } else if (selected.type === 'team') {
-                      navigate('/teams');
-                    }
-                  }}
-                  className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl font-bold transition-all shadow-md shadow-indigo-600/20 active:scale-95"
-                >
-                  {selected.type === 'project' ? <Briefcase className="h-4 w-4" /> : <Users className="h-4 w-4" />}
-                  Open {selected.type === 'project' ? 'Project Board' : 'Team Overview'}
-                </button>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      if (selected.type === 'project') {
+                        const edge = rawData?.edges.find(e => e.target === selected.id && e.type === 'HAS_PROJECT');
+                        const teamId = edge ? edge.source : 't1';
+                        navigate(`/project/${teamId}/${selected.id}`);
+                      } else if (selected.type === 'team') {
+                        navigate('/teams');
+                      }
+                    }}
+                    className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl font-bold transition-all shadow-md shadow-indigo-600/20 active:scale-95"
+                  >
+                    {selected.type === 'project' ? <Briefcase className="h-4 w-4" /> : <Users className="h-4 w-4" />}
+                    Open {selected.type === 'project' ? 'Project Board' : 'Team Overview'}
+                  </button>
+
+                  {/* Focus Mode Button for Projects */}
+                  {selected.type === 'project' && (
+                    <button
+                      onClick={() => {
+                        focusOnProject(focusedProjectId === selected.id ? null : selected.id);
+                      }}
+                      className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold transition-all active:scale-95 ${focusedProjectId === selected.id
+                        ? "bg-purple-100 text-purple-700 border-2 border-purple-300"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200"
+                        }`}
+                    >
+                      <Focus className="h-4 w-4" />
+                      {focusedProjectId === selected.id ? "Exit Focus Mode" : "Focus on this Project"}
+                    </button>
+                  )}
+                </div>
               )}
 
               {/* properties */}

@@ -1,470 +1,302 @@
-/**
- * HiringOptimizer — AI-powered hiring decision tool for HR
- * 
- * Analyzes whether hiring a senior developer is more cost-effective than
- * keeping multiple junior developers based on productivity metrics, GitHub stats,
- * and project delivery performance.
- */
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { 
-  Users, TrendingUp, GitBranch, Code, DollarSign, 
-  AlertCircle, CheckCircle, BarChart3, Zap, Target,
-  ArrowRight, Info, Calculator
-} from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { api } from '@/services/api';
-import { toast } from 'sonner';
 
-interface DeveloperMetrics {
+import { useQuery } from '@tanstack/react-query';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
+import { Users, TrendingUp, Brain, DollarSign, AlertTriangle, CheckCircle, Loader2 } from 'lucide-react';
+
+import { API_BASE_URL } from '@/lib/api_config';
+
+const API_BASE = API_BASE_URL;
+
+interface HiringRecommendation {
+  role: string;
+  reason: string;
+  priority: string;
+  estimated_impact: string;
+}
+
+interface SkillGap {
+  skill: string;
+  demand: number;
+  supply: number;
+  gap: number;
+  severity: string;
+}
+
+interface MemberVelocity {
   id: string;
   name: string;
   role: string;
-  performance: number;
-  tasksCompleted: number;
-  avgTaskTime: number; // hours
-  codeQuality: number; // 0-100
-  salary: number;
+  tickets_completed: number;
+  velocity_tier: string;
 }
 
-interface HiringRecommendation {
-  recommendation: 'hire_senior' | 'keep_juniors' | 'neutral';
-  confidence: number;
-  costSavings: number;
-  productivityGain: number;
-  reasoning: string[];
-  metrics: {
-    currentTeamOutput: number;
-    projectedSeniorOutput: number;
-    currentCost: number;
-    seniorCost: number;
-    roi: number;
+interface HiringAnalytics {
+  status: string;
+  hiring_urgency_score: number;
+  velocity: {
+    total_completed: number;
+    average_velocity: number;
+    member_count: number;
+    members: MemberVelocity[];
+    bottlenecks: MemberVelocity[];
+    recommendation: string;
   };
+  skill_gaps: {
+    coverage_score: number;
+    critical_gaps: SkillGap[];
+    hiring_recommendations: HiringRecommendation[];
+  };
+  cost_efficiency: {
+    average_cost_per_point: number;
+    total_monthly_cost: number;
+    total_story_points: number;
+    efficiency_score: number;
+    recommendation: string;
+  };
+  top_recommendation: HiringRecommendation | null;
 }
+
+const useHiringAnalytics = () => {
+  return useQuery<HiringAnalytics>({
+    queryKey: ['hiring-analytics'],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/api/hiring/analytics`);
+      if (!res.ok) throw new Error('Failed to fetch hiring analytics');
+      return res.json();
+    },
+    refetchInterval: 60000, // Refresh every minute
+  });
+};
 
 const HiringOptimizer = () => {
-  const [loading, setLoading] = useState(false);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [members, setMembers] = useState<DeveloperMetrics[]>([]);
-  const [selectedJuniors, setSelectedJuniors] = useState<string[]>([]);
-  const [seniorSalary, setSeniorSalary] = useState(120000);
-  const [seniorProductivity, setSeniorProductivity] = useState(85);
-  const [recommendation, setRecommendation] = useState<HiringRecommendation | null>(null);
+  const { data, isLoading, error } = useHiringAnalytics();
 
-  // Fetch team members
-  useEffect(() => {
-    const loadMembers = async () => {
-      setLoading(true);
-      try {
-        const teams = await api.getTeams();
-        const allMembers: DeveloperMetrics[] = [];
-        
-        teams.forEach(team => {
-          team.members?.forEach(member => {
-            // Calculate metrics from member data
-            const tasksCompleted = member.tickets?.filter(t => t.status === 'Done').length || 0;
-            const avgTaskTime = member.tickets?.length 
-              ? member.tickets.reduce((sum, t) => sum + (t.estimatedHours || 8), 0) / member.tickets.length
-              : 8;
-            
-            allMembers.push({
-              id: `${team.id}-${member.name}`,
-              name: member.name,
-              role: member.role,
-              performance: member.performance || 3.5,
-              tasksCompleted,
-              avgTaskTime,
-              codeQuality: Math.round((member.performance || 3.5) * 20), // Convert 5-scale to 100-scale
-              salary: member.role.toLowerCase().includes('senior') ? 100000 : 60000,
-            });
-          });
-        });
-        
-        setMembers(allMembers.filter(m => m.role.toLowerCase().includes('engineer') || m.role.toLowerCase().includes('developer')));
-      } catch (e: any) {
-        toast.error('Failed to load team members');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    loadMembers();
-  }, []);
-
-  const toggleJuniorSelection = (id: string) => {
-    setSelectedJuniors(prev => 
-      prev.includes(id) ? prev.filter(n => n !== id) : [...prev, id]
+  if (isLoading) {
+    return (
+      <div className="space-y-6 max-w-6xl mx-auto py-10">
+        <div className="rounded-xl border bg-card p-8 text-center space-y-6 shadow-sm">
+          <div className="inline-flex items-center justify-center p-3 rounded-full bg-primary/10 mb-4">
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+          </div>
+          <h1 className="text-2xl font-bold">Analyzing Team Data...</h1>
+          <p className="text-muted-foreground">Querying Neo4j skill graph and velocity metrics</p>
+        </div>
+      </div>
     );
-  };
+  }
 
-  const analyzeHiring = () => {
-    if (selectedJuniors.length === 0) {
-      toast.error('Please select at least one junior developer to compare');
-      return;
-    }
+  if (error || !data) {
+    return (
+      <div className="space-y-6 max-w-6xl mx-auto py-10">
+        <div className="rounded-xl border bg-destructive/10 p-8 text-center space-y-4">
+          <AlertTriangle className="h-12 w-12 text-destructive mx-auto" />
+          <h1 className="text-xl font-bold text-destructive">Connection Error</h1>
+          <p className="text-muted-foreground">Unable to connect to hiring analytics. Please check the backend.</p>
+        </div>
+      </div>
+    );
+  }
 
-    setAnalyzing(true);
-    
-    // Simulate API call with setTimeout
-    setTimeout(() => {
-      const juniorDevs = members.filter(m => selectedJuniors.includes(m.id));
-      
-      // Calculate current team metrics with safety checks
-      const currentTeamOutput = juniorDevs.reduce((sum, dev) => {
-        // Ensure we have valid numbers, default to 1 task if none completed
-        const tasksCompleted = Math.max(dev.tasksCompleted, 1);
-        const productivityScore = (dev.performance / 5) * (dev.codeQuality / 100) * tasksCompleted;
-        return sum + productivityScore;
-      }, 0);
-      
-      const currentCost = juniorDevs.reduce((sum, dev) => sum + dev.salary, 0);
-      
-      // Project senior developer output
-      // Assumption: Senior = 2.5x average junior productivity
-      const avgJuniorOutput = juniorDevs.length > 0 ? currentTeamOutput / juniorDevs.length : 0;
-      const projectedSeniorOutput = avgJuniorOutput * 2.5 * (seniorProductivity / 85); // Adjust by productivity score
-      
-      const seniorCost = seniorSalary;
-      
-      // Calculate ROI with safety checks
-      const costDiff = currentCost - seniorCost;
-      const outputDiff = projectedSeniorOutput - currentTeamOutput;
-      
-      // Prevent division by zero
-      const outputGainPct = currentTeamOutput > 0 ? (outputDiff / currentTeamOutput) * 100 : 0;
-      const costChangePct = currentCost > 0 ? (costDiff / currentCost) * 100 : 0;
-      const roi = outputGainPct - costChangePct;
-      
-      // Determine recommendation
-      let recommendation: 'hire_senior' | 'keep_juniors' | 'neutral';
-      let confidence = 0;
-      const reasoning: string[] = [];
-      
-      if (roi > 15 && projectedSeniorOutput > currentTeamOutput * 0.8) {
-        recommendation = 'hire_senior';
-        confidence = Math.min(95, 60 + Math.abs(roi));
-        reasoning.push(`Senior developer projected to deliver ${Math.round((projectedSeniorOutput / Math.max(currentTeamOutput, 1)) * 100)}% of current team output`);
-        reasoning.push(`Cost ${costDiff > 0 ? 'savings' : 'increase'} of $${Math.abs(Math.round(costDiff)).toLocaleString()} annually`);
-        reasoning.push(`Higher code quality and mentorship potential`);
-        reasoning.push(`Reduced coordination overhead`);
-      } else if (roi < -10) {
-        recommendation = 'keep_juniors';
-        confidence = Math.min(90, 60 + Math.abs(roi));
-        reasoning.push(`Current team delivers ${juniorDevs.length}x parallel work capacity`);
-        reasoning.push(`${costDiff < 0 ? 'Higher' : 'Lower'} total cost by $${Math.abs(Math.round(costDiff)).toLocaleString()}`);
-        reasoning.push(`Team redundancy and knowledge distribution`);
-        reasoning.push(`Junior developers show growth potential`);
-      } else {
-        recommendation = 'neutral';
-        confidence = 50;
-        reasoning.push(`Marginal difference in cost-effectiveness (ROI: ${roi.toFixed(1)}%)`);
-        reasoning.push(`Consider team dynamics and project complexity`);
-        reasoning.push(`Evaluate long-term growth and mentorship needs`);
-      }
-      
-      setRecommendation({
-        recommendation,
-        confidence,
-        costSavings: costDiff,
-        productivityGain: outputDiff,
-        reasoning,
-        metrics: {
-          currentTeamOutput,
-          projectedSeniorOutput,
-          currentCost,
-          seniorCost,
-          roi: isNaN(roi) ? 0 : roi, // Final safety check
-        },
-      });
-      
-      setAnalyzing(false);
-    }, 1500);
-  };
-
-  const getRecommendationColor = (rec: string) => {
-    switch (rec) {
-      case 'hire_senior': return 'text-green-500';
-      case 'keep_juniors': return 'text-blue-500';
-      default: return 'text-yellow-500';
-    }
-  };
-
-  const getRecommendationBg = (rec: string) => {
-    switch (rec) {
-      case 'hire_senior': return 'bg-green-500/10 border-green-500/30';
-      case 'keep_juniors': return 'bg-blue-500/10 border-blue-500/30';
-      default: return 'bg-yellow-500/10 border-yellow-500/30';
-    }
-  };
+  const urgencyColor = data.hiring_urgency_score > 70 ? 'text-red-500' :
+    data.hiring_urgency_score > 40 ? 'text-amber-500' : 'text-emerald-500';
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="container mx-auto p-6 space-y-6"
-    >
+    <div className="space-y-6 max-w-6xl mx-auto py-6 px-4">
       {/* Header */}
-      <div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-r from-teal-50 via-white to-emerald-50 px-8 py-6">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(20,184,166,0.08),transparent_60%)]" />
-        <div className="relative flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-teal-600 p-2.5 text-white shadow-lg shadow-teal-500/20">
-              <Calculator className="h-5 w-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-0.5">
-                <h1 className="text-xl font-bold text-foreground">Hiring Optimizer</h1>
-                <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-teal-500/10 text-teal-600 ring-1 ring-teal-500/20">AI-POWERED</span>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Decision support for strategic hiring across teams
-              </p>
-            </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-primary/10">
+            <Users className="h-6 w-6 text-primary" />
           </div>
-          <Badge variant="outline" className="text-xs">
-            <Zap className="h-3 w-3 mr-1" />
-            HR Analytics
-          </Badge>
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              Hiring Optimization Engine
+              <Badge variant="default" className="bg-emerald-500/10 text-emerald-600 border-emerald-500/20">
+                <CheckCircle className="h-3 w-3 mr-1" /> LIVE
+              </Badge>
+            </h1>
+            <p className="text-sm text-muted-foreground">Real-time analysis from Neo4j skill graph</p>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-sm text-muted-foreground">Hiring Urgency</p>
+          <p className={`text-3xl font-bold ${urgencyColor}`}>{data.hiring_urgency_score}%</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Panel: Configuration */}
-        <div className="lg:col-span-1 space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Select Junior Developers
-              </CardTitle>
-              <CardDescription>
-                Choose developers to compare against a senior hire
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {loading ? (
-                <p className="text-sm text-muted-foreground">Loading team members...</p>
-              ) : (
-                members
-                  .filter(m => !m.role.toLowerCase().includes('senior'))
-                  .map(member => (
-                    <button
-                      key={member.id}
-                      onClick={() => toggleJuniorSelection(member.id)}
-                      className={`w-full text-left p-3 rounded-lg border transition-all ${
-                        selectedJuniors.includes(member.id)
-                          ? 'bg-primary/10 border-primary'
-                          : 'bg-muted/50 border-border hover:border-primary/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="font-medium text-sm">{member.name}</p>
-                          <p className="text-xs text-muted-foreground">{member.role}</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs font-medium">${(member.salary / 1000).toFixed(0)}k</p>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <TrendingUp className="h-3 w-3" />
-                            {member.performance.toFixed(1)}
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  ))
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Senior Developer Profile
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Expected Salary</Label>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="number"
-                    value={seniorSalary}
-                    onChange={(e) => setSeniorSalary(Number(e.target.value))}
-                    className="flex-1"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">Annual compensation</p>
+      {/* Top Recommendation Banner */}
+      {data.top_recommendation && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardContent className="py-4">
+            <div className="flex items-start gap-4">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Brain className="h-5 w-5 text-primary" />
               </div>
-
-              <div className="space-y-2">
-                <Label>Expected Productivity Score</Label>
-                <Slider
-                  value={[seniorProductivity]}
-                  onValueChange={(v) => setSeniorProductivity(v[0])}
-                  min={50}
-                  max={100}
-                  step={5}
-                  className="w-full"
-                />
-                <p className="text-xs text-muted-foreground text-right">{seniorProductivity}/100</p>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-primary">Top Recommendation</p>
+                <p className="font-semibold">{data.top_recommendation.role}</p>
+                <p className="text-sm text-muted-foreground mt-1">{data.top_recommendation.reason}</p>
+                <Badge variant="outline" className="mt-2">{data.top_recommendation.estimated_impact}</Badge>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-              <Button
-                onClick={analyzeHiring}
-                disabled={analyzing || selectedJuniors.length === 0}
-                className="w-full"
-              >
-                {analyzing ? (
-                  <>Analyzing...</>
-                ) : (
-                  <>
-                    <BarChart3 className="h-4 w-4 mr-2" />
-                    Run Analysis
-                  </>
-                )}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
+      {/* Main Metrics Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-        {/* Right Panel: Results */}
-        <div className="lg:col-span-2 space-y-4">
-          {!recommendation ? (
-            <Card className="h-full flex items-center justify-center min-h-[500px]">
-              <CardContent className="text-center space-y-3 py-12">
-                <div className="flex justify-center">
-                  <div className="rounded-full bg-muted p-6">
-                    <Info className="h-12 w-12 text-muted-foreground" />
-                  </div>
-                </div>
-                <h3 className="text-lg font-semibold">No Analysis Yet</h3>
-                <p className="text-sm text-muted-foreground max-w-md">
-                  Select junior developers and configure the senior profile, then run the analysis
-                  to get AI-powered hiring recommendations.
+        {/* Team Velocity Card */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 text-blue-500" />
+              Team Velocity
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-baseline justify-between">
+              <span className="text-3xl font-bold">{data.velocity.average_velocity}</span>
+              <span className="text-sm text-muted-foreground">tickets/member</span>
+            </div>
+            <Progress value={Math.min(data.velocity.average_velocity * 20, 100)} className="h-2" />
+            <p className="text-xs text-muted-foreground">{data.velocity.recommendation}</p>
+
+            {data.velocity.bottlenecks.length > 0 && (
+              <div className="pt-2 border-t">
+                <p className="text-xs font-medium text-amber-600 mb-2">
+                  ⚠ {data.velocity.bottlenecks.length} potential bottlenecks
                 </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              {/* Recommendation Card */}
-              <Card className={`border-2 ${getRecommendationBg(recommendation.recommendation)}`}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="flex items-center gap-2">
-                        {recommendation.recommendation === 'hire_senior' ? (
-                          <CheckCircle className="h-6 w-6 text-green-500" />
-                        ) : recommendation.recommendation === 'keep_juniors' ? (
-                          <Users className="h-6 w-6 text-blue-500" />
-                        ) : (
-                          <AlertCircle className="h-6 w-6 text-yellow-500" />
-                        )}
-                        <span className={getRecommendationColor(recommendation.recommendation)}>
-                          {recommendation.recommendation === 'hire_senior'
-                            ? 'Recommend: Hire Senior Developer'
-                            : recommendation.recommendation === 'keep_juniors'
-                            ? 'Recommend: Keep Junior Team'
-                            : 'Neutral: Further Evaluation Needed'}
-                        </span>
-                      </CardTitle>
-                      <CardDescription className="mt-2">
-                        Confidence: {recommendation.confidence}% • Based on productivity, cost, and team dynamics
-                      </CardDescription>
+                <div className="space-y-1">
+                  {data.velocity.bottlenecks.slice(0, 3).map((b) => (
+                    <div key={b.id} className="text-xs flex justify-between">
+                      <span className="truncate">{b.name}</span>
+                      <span className="text-muted-foreground">{b.tickets_completed} tickets</span>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">Annual Cost Impact</p>
-                      <p className={`text-2xl font-bold ${recommendation.costSavings > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {recommendation.costSavings > 0 ? '+' : ''}${Math.abs(Math.round(recommendation.costSavings)).toLocaleString()}
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground">ROI Projection</p>
-                      <p className={`text-2xl font-bold ${recommendation.metrics.roi > 0 ? 'text-green-500' : 'text-red-500'}`}>
-                        {recommendation.metrics.roi > 0 ? '+' : ''}{recommendation.metrics.roi.toFixed(1)}%
-                      </p>
-                    </div>
-                  </div>
-
-                  <Separator />
-
-                  <div>
-                    <h4 className="font-semibold mb-2 flex items-center gap-2">
-                      <Code className="h-4 w-4" />
-                      Key Insights
-                    </h4>
-                    <ul className="space-y-2">
-                      {recommendation.reasoning.map((reason, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-sm">
-                          <ArrowRight className="h-4 w-4 mt-0.5 text-primary shrink-0" />
-                          <span>{reason}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Metrics Comparison */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Current Team ({selectedJuniors.length} Juniors)</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Total Cost</span>
-                      <span className="font-semibold">${Math.round(recommendation.metrics.currentCost).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Output Score</span>
-                      <span className="font-semibold">{recommendation.metrics.currentTeamOutput.toFixed(1)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Avg Performance</span>
-                      <span className="font-semibold">
-                        {(members.filter(m => selectedJuniors.includes(m.id)).reduce((sum, m) => sum + m.performance, 0) / selectedJuniors.length).toFixed(1)}/5.0
-                      </span>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Senior Developer (Projected)</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Total Cost</span>
-                      <span className="font-semibold">${Math.round(recommendation.metrics.seniorCost).toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Output Score</span>
-                      <span className="font-semibold">{recommendation.metrics.projectedSeniorOutput.toFixed(1)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm text-muted-foreground">Expected Performance</span>
-                      <span className="font-semibold">{(seniorProductivity / 20).toFixed(1)}/5.0</span>
-                    </div>
-                  </CardContent>
-                </Card>
+                  ))}
+                </div>
               </div>
-            </>
-          )}
-        </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Skill Gap Card */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <Brain className="h-4 w-4 text-purple-500" />
+              Skill Coverage
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-baseline justify-between">
+              <span className="text-3xl font-bold">{data.skill_gaps.coverage_score}%</span>
+              <span className="text-sm text-muted-foreground">coverage</span>
+            </div>
+            <Progress
+              value={data.skill_gaps.coverage_score}
+              className={`h-2 ${data.skill_gaps.coverage_score < 70 ? '[&>div]:bg-amber-500' : ''}`}
+            />
+
+            {data.skill_gaps.critical_gaps.length > 0 && (
+              <div className="pt-2 border-t">
+                <p className="text-xs font-medium text-red-600 mb-2">Critical Skill Gaps</p>
+                <div className="space-y-2">
+                  {data.skill_gaps.critical_gaps.slice(0, 4).map((gap: SkillGap) => (
+                    <div key={gap.skill} className="flex items-center justify-between text-xs">
+                      <span className="font-medium">{gap.skill}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-muted-foreground">{gap.supply}/{gap.demand}</span>
+                        <Badge
+                          variant="outline"
+                          className={
+                            gap.severity === 'HIGH' ? 'border-red-500 text-red-500' :
+                              gap.severity === 'MEDIUM' ? 'border-amber-500 text-amber-500' :
+                                'border-gray-500 text-gray-500'
+                          }
+                        >
+                          -{gap.gap}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Cost Efficiency Card */}
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-emerald-500" />
+              Cost Efficiency
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-baseline justify-between">
+              <span className="text-3xl font-bold">${data.cost_efficiency.average_cost_per_point}</span>
+              <span className="text-sm text-muted-foreground">/story point</span>
+            </div>
+            <Progress value={data.cost_efficiency.efficiency_score} className="h-2" />
+            <p className="text-xs text-muted-foreground">{data.cost_efficiency.recommendation}</p>
+
+            <div className="pt-2 border-t grid grid-cols-2 gap-2 text-xs">
+              <div>
+                <p className="text-muted-foreground">Monthly Cost</p>
+                <p className="font-medium">${data.cost_efficiency.total_monthly_cost.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-muted-foreground">Story Points</p>
+                <p className="font-medium">{data.cost_efficiency.total_story_points}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
-    </motion.div>
+
+      {/* Hiring Recommendations */}
+      {data.skill_gaps.hiring_recommendations.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Recommended Hires
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {data.skill_gaps.hiring_recommendations.map((rec: HiringRecommendation, idx: number) => (
+                <div
+                  key={idx}
+                  className={`p-4 rounded-lg border ${rec.priority === 'HIGH' ? 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950' :
+                    rec.priority === 'MEDIUM' ? 'border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950' :
+                      'border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900'
+                    }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="font-semibold">{rec.role}</p>
+                    <Badge variant={rec.priority === 'HIGH' ? 'destructive' : 'secondary'}>
+                      {rec.priority}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-2">{rec.reason}</p>
+                  <p className="text-xs font-medium text-primary">{rec.estimated_impact}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Footer */}
+      <div className="text-center text-xs text-muted-foreground pt-4 border-t">
+        Data sourced from Neo4j Knowledge Graph • Last updated: Just now
+      </div>
+    </div>
   );
 };
 

@@ -48,8 +48,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 600);
-    return () => clearTimeout(timer);
+    setLoading(false);
   }, []);
 
   const allProjects = getAllProjects();
@@ -99,12 +98,20 @@ const Dashboard = () => {
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="space-y-6"
+      className="space-y-6 relative"
     >
+      {/* Background Grid */}
+      <div className="absolute inset-0 pointer-events-none -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-grid-black [mask-image:linear-gradient(to_bottom,white,transparent)] opacity-40" />
+      </div>
+
       {/* Hero Header */}
-      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border border-border bg-card px-8 py-7">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(20,184,166,0.08),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(16,185,129,0.05),transparent_60%)]" />
+      <div className="absolute inset-0 pointer-events-none -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-grid-black [mask-image:linear-gradient(to_bottom,white,transparent)] opacity-40" />
+      </div>
+
+      {/* Hero Header */}
+      <motion.div variants={itemVariants} className="relative overflow-hidden rounded-2xl border border-border bg-card px-8 py-7 shadow-sm">
         <div className="relative flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2.5 mb-2">
@@ -142,9 +149,9 @@ const Dashboard = () => {
       <motion.div variants={itemVariants} className="grid gap-3 sm:grid-cols-3">
         <Link
           to="/chat"
-          className="group relative overflow-hidden rounded-xl border border-border/40 bg-card p-5 transition-all hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/5"
+          className="group relative overflow-hidden rounded-xl border border-border bg-card p-5 transition-all hover:border-teal-500/50 hover:shadow-md"
         >
-          <div className="absolute inset-0 bg-teal-500/[0.03] opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-secondary/30 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative flex items-start gap-4">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-500/10 shrink-0 ring-1 ring-teal-500/20">
               <MessageCircle className="h-5 w-5 text-teal-500" />
@@ -164,9 +171,9 @@ const Dashboard = () => {
 
         <Link
           to="/graph"
-          className="group relative overflow-hidden rounded-xl border border-border/40 bg-card p-5 transition-all hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/5"
+          className="group relative overflow-hidden rounded-xl border border-border bg-card p-5 transition-all hover:border-teal-500/50 hover:shadow-md"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-teal-500/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-secondary/30 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative flex items-start gap-4">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-500/10 shrink-0 ring-1 ring-teal-500/20">
               <GitGraph className="h-5 w-5 text-teal-500" />
@@ -183,9 +190,9 @@ const Dashboard = () => {
 
         <Link
           to="/role-dashboard"
-          className="group relative overflow-hidden rounded-xl border border-border/40 bg-card p-5 transition-all hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/5"
+          className="group relative overflow-hidden rounded-xl border border-border bg-card p-5 transition-all hover:border-teal-500/50 hover:shadow-md"
         >
-          <div className="absolute inset-0 bg-gradient-to-br from-teal-500/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="absolute inset-0 bg-secondary/30 opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative flex items-start gap-4">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-500/10 shrink-0 ring-1 ring-teal-500/20">
               <Brain className="h-5 w-5 text-teal-500" />
@@ -206,10 +213,10 @@ const Dashboard = () => {
         variants={itemVariants}
         className="grid gap-3 grid-cols-2 lg:grid-cols-4"
       >
-        <StatCard icon={FolderKanban} label="Projects" value={stats.totalProjects} sub={`${stats.openTickets} open tickets`} color="primary" accent="from-teal-500/10 to-teal-500/5" />
-        <StatCard icon={Clock} label="In Progress" value={stats.inProgress} sub={`${stats.totalTickets} total tickets`} color="warning" accent="from-amber-500/10 to-amber-500/5" />
-        <StatCard icon={CheckCircle2} label="Completed" value={stats.completedTickets} sub={`${stats.totalTickets > 0 ? Math.round((stats.completedTickets / stats.totalTickets) * 100) : 0}% completion`} color="success" accent="from-teal-500/10 to-emerald-500/5" />
-        <StatCard icon={AlertCircle} label="High Priority" value={stats.highPriority} sub="Needs attention" color="destructive" accent="from-red-500/10 to-rose-500/5" />
+        <StatCard icon={FolderKanban} label="Projects" value={stats.totalProjects} sub={`${stats.openTickets} open tickets`} color="primary" accent="bg-primary/5" />
+        <StatCard icon={Clock} label="In Progress" value={stats.inProgress} sub={`${stats.totalTickets} total tickets`} color="warning" accent="bg-amber-500/5" />
+        <StatCard icon={CheckCircle2} label="Completed" value={stats.completedTickets} sub={`${stats.totalTickets > 0 ? Math.round((stats.completedTickets / stats.totalTickets) * 100) : 0}% completion`} color="success" accent="bg-emerald-500/5" />
+        <StatCard icon={AlertCircle} label="High Priority" value={stats.highPriority} sub="Needs attention" color="destructive" accent="bg-red-500/5" />
       </motion.div>
 
       {/* ─── Main Content ─── */}

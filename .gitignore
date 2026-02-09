@@ -27,3 +27,5 @@ debug_app.py
 test-ui.html
 test_connectivity.ps1
 test_neo4j_connection.py
+.vercel
+.env*.local

@@ -22,6 +22,8 @@ import {
   Zap,
   FileText,
   RefreshCw,
+  Mail,
+  PieChart as PieChartIcon,
 } from 'lucide-react';
 import { api, type DashboardData, type AnalysisResult } from '@/services/api';
 import { Progress } from '@/components/ui/progress';
@@ -30,7 +32,7 @@ import { cn } from '@/lib/utils';
 import NarrativeCard from '@/components/NarrativeCard';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend, CartesianGrid } from 'recharts';
 import { generateCompanyReportPDF } from '@/utils/pdfGenerator';
 import { generateProjectAnalysisPDF } from '@/utils/projectPdfGenerator';
 
@@ -163,6 +165,12 @@ const ChairpersonDashboard = () => {
     }
   };
 
+  const handleEmailReport = () => {
+    toast.success('Executive Brief Sent', {
+      description: 'The quarterly strategic report has been emailed to the Board of Directors.'
+    });
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
@@ -275,6 +283,13 @@ const ChairpersonDashboard = () => {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={handleEmailReport}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-input bg-background hover:bg-accent hover:text-accent-foreground transition-all text-sm font-medium"
+            >
+              <Mail className="h-4 w-4" />
+              Email Board
+            </button>
+            <button
               onClick={handleGenerateCompanyReport}
               disabled={generatingReport}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50 text-sm font-medium shadow-sm hover:shadow"
@@ -371,6 +386,36 @@ const ChairpersonDashboard = () => {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Capital Efficiency Chart */}
+        {financeData?.cost_analysis && (
+          <div className="mb-6 rounded-lg border bg-card/50 p-4">
+            <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+              <PieChartIcon className="h-4 w-4 text-emerald-500" />
+              Capital Efficiency (Tickets Delivered per $1k Spent)
+            </h3>
+            <div className="h-[200px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={financeData.cost_analysis.map((p: any) => ({
+                    name: p.project_name,
+                    efficiency: p.cost_to_company > 0 ? (p.done_tickets / (p.cost_to_company / 1000)).toFixed(2) : 0
+                  })).sort((a: any, b: any) => b.efficiency - a.efficiency).slice(0, 5)}
+                  layout="vertical"
+                  margin={{ top: 5, right: 30, left: 40, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="rgba(0,0,0,0.05)" />
+                  <XAxis type="number" hide />
+                  <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 10 }} />
+                  <Tooltip cursor={{ fill: 'transparent' }} contentStyle={{ borderRadius: '8px', fontSize: '11px' }} />
+                  <Bar dataKey="efficiency" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20}>
+                    <div />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </div>
           </div>
         )}

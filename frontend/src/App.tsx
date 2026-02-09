@@ -14,7 +14,6 @@ import RiskAnalysis from "./pages/RiskAnalysis";
 import RoleSelector from "./pages/RoleSelector";
 import RoleDashboard from "./pages/RoleDashboard";
 import GraphVisualization from "./pages/GraphVisualization";
-import NeuralGraph from "./pages/NeuralGraph";
 import ChatPage from './pages/ChatPage';
 import TeamSimulator from './pages/TeamSimulator';
 import HiringOptimizer from './pages/HiringOptimizer';
@@ -46,7 +45,6 @@ const App = () => (
                 <Route path="/project/:teamId/:projectId" element={<ProjectView />} />
                 <Route path="/project/:teamId/:projectId/risk" element={<RiskAnalysis />} />
                 <Route path="/graph" element={<GraphVisualization />} />
-                <Route path="/neural-graph" element={<NeuralGraph />} />
                 <Route path="/chat" element={<ChatPage />} />
                 <Route path="/simulator" element={<TeamSimulator />} />
                 <Route path="/hiring-optimizer" element={<HiringOptimizer />} />
