@@ -2,7 +2,7 @@ import sys
 import os
 
 # Add backend to path
-sys.path.append(os.path.join(os.getcwd(), "backend"))
+sys.path.append(os.path.join(os.getcwd(), "api"))
 
 from app.agents.simulation import SimulationAgent
 
