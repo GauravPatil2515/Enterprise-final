@@ -85,13 +85,13 @@ MODEL_REGISTRY: Dict[TaskType, _ModelConfig] = {
         system_prompt=_SYSTEM_PROMPTS[TaskType.INTENT],
     ),
     TaskType.REASONING: _ModelConfig(
-        model_id="deepseek-ai/DeepSeek-V3",  # SOTA reasoning model
+        model_id="meta-llama/Meta-Llama-3.1-70B-Instruct",  # Reliable SOTA alternative to DeepSeek
         max_tokens=1000,
         temperature=0.3,
         system_prompt=_SYSTEM_PROMPTS[TaskType.REASONING],
     ),
     TaskType.EXPLANATION: _ModelConfig(
-        model_id="deepseek-ai/DeepSeek-V3",  # Switch to DeepSeek-V3 (Ungated SOTA)
+        model_id="meta-llama/Meta-Llama-3.1-70B-Instruct",  # Reliable SOTA alternative to DeepSeek
         max_tokens=1200,
         temperature=0.4,
         system_prompt=_SYSTEM_PROMPTS[TaskType.EXPLANATION],
