@@ -13,16 +13,13 @@ from .core.config import settings
 from .api.routes import router as crud_router
 from .core.neo4j_client import neo4j_client
 from .core.model_router import model_router, TaskType
-from .core.model_router import model_router, TaskType
 from .core.context_manager import context_assembler
 from .core.cache import get_cached_risk, set_cached_risk
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
-logging.basicConfig(level=logging.INFO)
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-print("🔥🔥🔥 BACKEND RESTARTING 🔥🔥🔥")
+logger.info("🔥 Backend module loaded (Vercel serverless)")
 
 from .agents.coordinator import coordinator
 from .agents.hiring import hiring_analytics
@@ -36,13 +33,27 @@ app = FastAPI(
 # ── CORS — allow frontend origins (localhost + production) ──
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for simplicity; restrict in production if needed
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 
+# ── Health Check — verifies the function is alive on Vercel ──
+@app.get("/api/health")
+async def health_check():
+    """Health check endpoint for deployment verification."""
+    neo4j_ok = False
+    try:
+        neo4j_ok = neo4j_client.verify_connection()
+    except Exception:
+        pass
+    return {
+        "status": "ok",
+        "neo4j_connected": neo4j_ok,
+        "version": "2.0.0"
+    }
 
 
 # ── Shutdown: close Neo4j driver ──
@@ -55,7 +66,7 @@ async def shutdown_event():
 # Include CRUD routes
 app.include_router(crud_router)
 
-# Initialize risk agent (reads Neo4j directly)
+# Initialize risk agent (reads Neo4j directly — lazy, won't crash)
 risk_agent = DeliveryRiskAgent()
 
 

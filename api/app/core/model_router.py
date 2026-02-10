@@ -125,13 +125,21 @@ INTENT_TO_TASK: Dict[str, TaskType] = {
 class ModelRouter:
     """
     Intelligent LLM router — selects optimal model and prompt per task.
+    Uses LAZY client initialization for Vercel serverless compatibility.
     """
 
     def __init__(self):
-        self.client = OpenAI(
-            base_url=settings.FEATHERLESS_BASE_URL,
-            api_key=settings.FEATHERLESS_API_KEY,
-        )
+        self._client = None
+
+    @property
+    def client(self):
+        """Lazy OpenAI client — only created on first LLM call."""
+        if self._client is None:
+            self._client = OpenAI(
+                base_url=settings.FEATHERLESS_BASE_URL,
+                api_key=settings.FEATHERLESS_API_KEY,
+            )
+        return self._client
 
     # ── Core dispatch ─────────────────────────────────────────────────────
 
