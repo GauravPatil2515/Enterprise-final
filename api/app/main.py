@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any, cast
 import logging
 import time
 from .agents.risk import DeliveryRiskAgent
@@ -38,6 +38,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """
+    Global exception handler to catch unhandled errors and return a JSON response
+    instead of crashing the server or returning a raw 500 HTML page.
+    """
+    logger.error(f"Global exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal Server Error", "error": str(exc)}
+    )
 
 
 # ── Health Check — verifies the function is alive on Vercel ──
@@ -607,7 +620,7 @@ async def get_company_report():
             ORDER BY t.name, p.name
         """)
 
-        teams_map = {}
+        teams_map: Dict[str, Dict[str, Any]] = {}
         all_projects = []
         for r in records:
             team = dict(r["team"]) if r["team"] else {}
@@ -615,7 +628,7 @@ async def get_company_report():
             tid = team.get("id", "unknown")
 
             if tid not in teams_map:
-                teams_map[tid] = {
+                team_entry: Dict[str, Any] = {
                     **team,
                     "member_count": r["team_members"],
                     "projects": [],
@@ -623,6 +636,7 @@ async def get_company_report():
                     "total_done": 0,
                     "total_blocked": 0,
                 }
+                teams_map[tid] = team_entry
 
             proj_data = {
                 **proj,
@@ -1113,7 +1127,7 @@ async def simulate_team_changes(req: TeamSimulationRequest):
         # Get baseline risk from cache or let simulator estimate
         baseline = req.baseline_risk
         if baseline is None:
-            cached = _get_cached_risk(req.project_id)
+            cached = get_cached_risk(req.project_id)
             if cached:
                 baseline = cached.risk_score
 
@@ -1228,11 +1242,13 @@ async def get_knowledge_graph():
         
         for r in member_records:
             member = dict(r["member"])
-            member_id = member.get("id", member.get("name"))
+            member_id = member.get("id") or member.get("name") or f"mem-{random.randint(1000,9999)}"
             member_ids.append(member_id)
             
             # Deterministic skill assignment based on member name
-            seed = int(hashlib.md5(member_id.encode()).hexdigest()[:8], 16)
+            # Break down for linter
+            digest = str(hashlib.md5(str(member_id).encode()).hexdigest())
+            seed = int(cast(Any, digest)[0:8], 16)
             random.seed(seed)
             num_skills = random.randint(2, 4)
             member_skills = random.sample(SKILLS, num_skills)
@@ -1270,11 +1286,12 @@ async def get_knowledge_graph():
         
         for idx, r in enumerate(project_records):
             project = dict(r["project"])
-            project_id = project.get("id", project.get("name"))
+            project_id = project.get("id") or project.get("name") or f"proj-{random.randint(1000,9999)}"
             project_ids.append(project_id)
             
             # Deterministic risk level
-            seed = int(hashlib.md5(project_id.encode()).hexdigest()[:8], 16)
+            digest = str(hashlib.md5(str(project_id).encode()).hexdigest())
+            seed = int(cast(Any, digest)[0:8], 16)
             random.seed(seed)
             risk = random.choices(risk_levels, weights=[0.4, 0.35, 0.2, 0.05])[0]
             
@@ -1330,7 +1347,8 @@ async def get_knowledge_graph():
         
         # Connect members to skills
         for member_id in member_ids:
-            seed = int(hashlib.md5(member_id.encode()).hexdigest()[:8], 16)
+            digest = str(hashlib.md5(str(member_id).encode()).hexdigest())
+            seed = int(cast(Any, digest)[0:8], 16)
             random.seed(seed)
             num_skills = random.randint(2, 4)
             member_skills = random.sample(SKILLS, num_skills)
@@ -1343,9 +1361,10 @@ async def get_knowledge_graph():
                 })
         
         # Add Ticket nodes for each project
-        ticket_count = 0
+        ticket_count: int = 0
         for project_id in project_ids:
-            seed = int(hashlib.md5(project_id.encode()).hexdigest()[:8], 16)
+            digest = str(hashlib.md5(str(project_id).encode()).hexdigest())
+            seed = int(cast(Any, digest)[0:8], 16)
             random.seed(seed)
             num_tickets = random.randint(3, 5)
             
@@ -1353,11 +1372,12 @@ async def get_knowledge_graph():
                 template = random.choice(TICKET_TEMPLATES)
                 title, ticket_type, priority = template
                 status = random.choice(STATUSES)
-                ticket_id = f"tkt-{project_id[-6:]}-{i+1:02d}"
+                pid_str = str(project_id)
+                ticket_id = f"tkt-{cast(Any, pid_str)[-6:]}-{i+1:02d}"
                 
                 nodes.append({
                     "id": ticket_id,
-                    "label": f"{title[:20]}...",
+                    "label": f"{cast(Any, title)[:20]}...",
                     "type": "ticket",
                     "properties": {
                         "title": title,
@@ -1383,7 +1403,7 @@ async def get_knowledge_graph():
                         "type": "ASSIGNED_TO"
                     })
                 
-                ticket_count += 1
+                ticket_count = ticket_count + 1
         
         # Add project dependencies (some projects depend on others)
         if len(project_ids) >= 2:

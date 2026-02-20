@@ -1,7 +1,7 @@
 {
   "scripts": {
     "start": "npm run dev",
-    "dev": "concurrently \"uvicorn api.app.main:app --reload --port 8001\" \"npm run dev --prefix frontend\"  --names \"BACKEND,FRONTEND\" --prefix-colors \"blue,green\"",
+    "dev": "concurrently \"./venv/bin/uvicorn api.app.main:app --reload --port 8001\" \"npm run dev --prefix frontend\"  --names \"BACKEND,FRONTEND\" --prefix-colors \"blue,green\"",
     "build": "cd frontend && npm install && npm run build",
     "lint": "eslint .",
     "preview": "vite preview"

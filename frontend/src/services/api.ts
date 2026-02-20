@@ -3,6 +3,8 @@
  * Connects frontend to FastAPI backend at /api/*
  */
 
+import { toast } from "sonner";
+
 const API_BASE = '/api';
 
 // ============================================================================
@@ -10,20 +12,33 @@ const API_BASE = '/api';
 // ============================================================================
 
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-    ...options,
-  });
+  try {
+    const res = await fetch(`${API_BASE}${path}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...options?.headers,
+      },
+      ...options,
+    });
 
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ detail: res.statusText }));
-    throw new Error(error.detail || `API Error ${res.status}`);
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({ detail: res.statusText }));
+      const errorMessage = errorData.detail || `API Error ${res.status}`;
+
+      // Show user-friendly toast
+      toast.error(`Error: ${errorMessage}`);
+
+      throw new Error(errorMessage);
+    }
+
+    return res.json();
+  } catch (error) {
+    console.error("API Request Failed:", error);
+    if (error instanceof TypeError && error.message === "Failed to fetch") {
+      toast.error("Network Error: Backend may be down.");
+    }
+    throw error;
   }
-
-  return res.json();
 }
 
 
